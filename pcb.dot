@@ -1,0 +1,75 @@
+digraph G {
+	rankdir=LR;
+	overlap=false;
+//	concentrate=true
+
+	node [shape=box, style="filled", color="#bbbbff"]
+
+	dac           [label="DAC"]
+	fpga          [label="FPGA"]
+	micro         [label="Microkontroller"]
+	clk           [label="Klokke\n(48MHz)"]
+	osc           [label="Oscillator\n(20MHz)"]
+	flash         [label="FPGA\nflashbrikke"]
+	PSU
+	caps          [label="Avkoblings-\nkondensatorer"]
+
+	{rank=same;clk;osc}
+
+	node [color="#ffbbbb"]
+	jtag          [label="JTAG-\nkonnektor x2"]
+	midi          [label="MIDI\ninputport"]
+	btn   [ label="Knapper x12\n(force sensitive)"]
+	vol   [ label="Volume knob"]
+	gpio          [label="GPIO (70x)"]
+	jack          [label="MiniJack"]
+	{rank=same;jtag;midi;btn;}
+	{rank=same;gpio;jack;}
+
+	node [color="#bbffbb"]
+	VCC           [label="VCC\n5V/3A"]
+	GND
+	//{rank=same;VCC;GND;}
+
+	// input
+	jtag -> micro [label="flash"]
+	jtag -> flash
+	midi -> micro [label="UART"]
+	btn -> micro  [label="ADC"]
+	vol -> micro  [label="ADC"]
+
+	micro -> gpio [dir=both]
+	fpga -> gpio [dir=both]
+	//micro -> gpio -> micro
+	//fpga -> gpio -> fpga
+
+	// output
+	dac -> jack
+
+	// internal
+	flash -> fpga [label="flash"]
+	micro -> fpga [label="SPI\nmed DMA:\l-keyboard state\l-sound envelope\l-perhaps samples\l"]
+	micro -> dac  [label="init"]
+	fpga -> dac   [label="samples"]
+	fpga -> caps [dir=both]
+
+	clk -> micro
+	osc -> fpga
+
+
+
+	edge [color="red", dir=none]
+	PSU -> fpga
+	PSU -> micro
+	PSU -> clk
+	PSU -> osc
+	PSU -> dac
+
+	edge [color="gray", dir=forward]
+	VCC -> PSU -> GND
+	/*
+	VCC -> midi -> GND
+	jack -> GND
+
+	/**/
+}
