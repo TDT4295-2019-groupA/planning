@@ -1,0 +1,8 @@
+digraph asd{
+    rankdir=LR;
+    keyboard->micro->fpga->dac
+    key1->keyboard
+    key2->keyboard
+    key3->keyboard
+    key4->keyboard
+}

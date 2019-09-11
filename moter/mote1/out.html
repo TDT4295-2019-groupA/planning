@@ -1,0 +1,149 @@
+<h1 id="folk">Folk</h1>
+<h2 id="amund">Amund</h2>
+<ul>
+<li>4 året data</li>
+<li>digdat, maskinnær, komptek</li>
+<li>java</li>
+</ul>
+<h2 id="rikke">Rikke</h2>
+<ul>
+<li>litt erfaring med lowlevel embedded</li>
+<li>litt scala, c , asm</li>
+</ul>
+<h2 id="eilif">Eilif</h2>
+<ul>
+<li><ol start="3" type="1">
+<li>året data</li>
+</ol></li>
+<li>hatt digdat</li>
+<li>maskinnær</li>
+<li>c++</li>
+<li>python</li>
+</ul>
+<h2 id="petter">Petter</h2>
+<ul>
+<li>informatikk 4,</li>
+<li>Går database</li>
+<li>datadig, mikrokontrollere</li>
+<li>c java c#</li>
+</ul>
+<h2 id="peder">Peder</h2>
+<ul>
+<li><ol start="4" type="1">
+<li>data</li>
+</ol></li>
+<li>python, c++, c, jobbet på ARM</li>
+<li>har fiklet med lyd</li>
+</ul>
+<h2 id="robert">Robert</h2>
+<ul>
+<li><ol start="4" type="1">
+<li>data</li>
+</ol></li>
+<li>komptekt, maskinnær</li>
+<li>scala i jobb</li>
+</ul>
+<h2 id="rikard">Rikard</h2>
+<ul>
+<li><ol start="4" type="1">
+<li>data</li>
+</ol></li>
+<li>komptekt, digdat, etc</li>
+<li>python, litt c</li>
+</ul>
+<h2 id="karl">Karl</h2>
+<ul>
+<li>4’de året data</li>
+<li>security</li>
+<li>c++ python, liker ikke scala</li>
+<li>hobbyelektronikk som arduino og liknende</li>
+<li>liker lodding</li>
+</ul>
+<h1 id="oversikt">oversikt</h1>
+<h2 id="pcb">PCB</h2>
+<ul>
+<li>printed circuit board</li>
+<li>kicad</li>
+<li>designes først</li>
+<li>trenger ikke <em>mye</em> funksjonalitet</li>
+</ul>
+<p>Vi må interagere mellom konmponentene. For dette er PCB bread and butter</p>
+<h2 id="fpga">FPGA</h2>
+<ul>
+<li>field programmable gate array</li>
+<li>chisel</li>
+<li>arbitrær logikk</li>
+</ul>
+<h2 id="mikronontrolleren">Mikronontrolleren</h2>
+<ul>
+<li>Kraftig</li>
+<li>gecko</li>
+<li>ingen os</li>
+<li>kjører i C eller ASM nivå</li>
+<li>vanskelig med parallelle jobber grunnet mangel av os</li>
+<li>inget filsystem</li>
+</ul>
+<h2 id="input">Input</h2>
+<ul>
+<li>MIDI?
+<ul>
+<li>standard for å formidle noter og instrument data</li>
+</ul></li>
+</ul>
+<h2 id="output">Output</h2>
+<ul>
+<li>Analog signal</li>
+<li>Vi burde kjøpe en DAC</li>
+</ul>
+<h2 id="lydbølger">Lydbølger</h2>
+<ul>
+<li>Polytonekrav</li>
+<li>bølger kan adderes</li>
+</ul>
+<h2 id="amund-vil-at-alle-er-enige-om-hva-mvp-er">Amund vil at alle er enige om hva MVP er</h2>
+<ul>
+<li>4-7 knapper</li>
+<li>addering av bølger på fpga</li>
+<li>kansje treig og teit</li>
+</ul>
+<p>Folk samtykker i stillhet</p>
+<p>Amund vil at alle bidrar likt, men er klar over at noen aspirerende genier vil gjøre mere.</p>
+<h2 id="forventinger">Forventinger</h2>
+<p>Tegnet av Amund:</p>
+<p><img src="pd-images/3a2b5f0f95400658dc4b9eaf2730786deb88cdfb.png" /></p>
+<ul>
+<li>Vi trenger trolig en DAC, eller vi kan går får å gjøre PWM på FPGA hvis vi vil ha det morsomt</li>
+<li>Mikrokontrolleren har 32 registere.</li>
+<li>Vi trenger kansje RAM, ikke ROM
+<ul>
+<li>Dette følger med enkelte modeller av EFM-32</li>
+<li>vi må bestemme hvilke komponenter vi vil ha</li>
+<li>giant gecko har 1000kb mer flash memory og 128kb med RAM</li>
+</ul></li>
+</ul>
+<h3 id="thought-process">Thought process:</h3>
+<p><img src="pd-images/bcfdb3c7da7bdc99b18209f6af6c0bcb10df9996.png" /></p>
+<h3 id="actual">Actual:</h3>
+<p><img src="pd-images/b00fb2020befabdda1472e25eb1b6a526b0aac22.png" /></p>
+<p>red edge: backup on PCB in case of pivot</p>
+<h2 id="kommunikasjon">Kommunikasjon</h2>
+<p>Slack, Github Org</p>
+<p><em>(plz install the Slack app)</em></p>
+<h3 id="lederrolle">Lederrolle</h3>
+<ul>
+<li>Tar imot meldinger fra folk</li>
+<li>Snakke med professor</li>
+<li>Ta imot og gi kjeft</li>
+</ul>
+<p>Hvem er den heldige: <strong>AMUND</strong></p>
+<h2 id="gruppekontrakt">Gruppekontrakt</h2>
+<ul>
+<li>Straff for å ikke dukke opp og ikke gi grunn på standup: kakestraff
+<ul>
+<li>hjemmelaget</li>
+</ul></li>
+<li>annen/mer straff kan eventuelt introduseres etter behov</li>
+<li>Akademisk kvarter</li>
+<li>møte onsdag kl 16-18</li>
+<li>Avgjørelser: konsensus etterfulgt av avstemning ved behov (majority rule)</li>
+</ul>
