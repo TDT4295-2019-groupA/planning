@@ -1,0 +1,41 @@
+Møtereferat 2019-09-11
+
+Oppmøte: Markus, Robert, Yong Bin, Amund, Karl, Rikard, Peder, Eilif, Rikke
+
+Første møte
+Vi skal designe en synthesizer
+
+Markus går informatikk, mest høynivå, VR, Unity, sveising
+
+Oppsummering av forrige møte
+
+Setter av seks personer til KiCAD
+- Rikke
+- Karl
+- Rikard
+- Amund
+- Robert
+- Eilif/Peder
+^ Flyttes over til mikrokontroller/fpga etterhvert som pcb blir ferdig
+
+Mikrokontroller programmeres i C.
+Må vite hvordan input ser ut, først med buttons, deretter MIDI.
+Vi skal kjøpe tre Giant Gecko Series 1 DevKits
+Mikrokontrolleren skal gjøre setup/init av DAC
+
+Hvordan skal FPGA sende til DACen?
+FPGAen har 70 IO-pins
+Kan bruke force-sensitive knapper eller knapper+pot.
+Setter på GPIO-headers for utvidelser etter PCB-design.
+JTAG for programmering
+
+Ønsker å skrive shopping-liste og få bestilt i løpet av morgendagen.
+
+Mikrokontroller skal sende state med hvilke knapper som er trykket og hvor mye tli FPGA.
+
+Vi tenker at vi har ferdiglagde samples av toner og pitcher opp og ned.
+Poller knapper hvert 20ms.
+
+Sendes ut på DACen over PCM
+
+Vi må komme igang veldig snart.
