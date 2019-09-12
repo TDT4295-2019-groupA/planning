@@ -1,28 +1,34 @@
 // some planning psuedo code just so that we're on the same page:
 // 'freq' is short for frequency
 
+
+
 // ========== DEFINITIONS ==================
 // shared by FPGA and the microcontroller
+
+
 
 #define PI              3.2415926535
 #define SAMPLE_RATE     44100
 #define N_MIDI_KEYS     128
 #define N_MIDI_CHANNELS 16
-#define MIDI_A3_INDEX   45 /* see https://www.noterepeat.com/articles/how-to/213-midi-basics-common-terms-explained */
-#define MIDI_A3_FREQ    440.0
+#define MIDI_A3_INDEX   45    /* see https://www.noterepeat.com/articles/how-to/213-midi-basics-common-terms-explained */
+#define MIDI_A3_FREQ    440.0 /* no, i won't listen to your A=432Hz bullshit */
 #define SAMPLE_MAX      0x7FFF
 #define N_GENERATORS    8 /* number of supported notes playing simultainiously  (polytones), \
                              subject to change, chisel and microcontroller code \
-                             should scale from this single variable */
+                             should scale from this single variable alone */
 
 typedef unsigned int    uint;
-typedef unsigned char   NoteIndex;
-typedef unsigned char   Velocity; // goes from 0 to 127
+typedef unsigned char   byte;
+typedef byte            NoteIndex;
+typedef byte            Velocity; // goes from 0 to 127
 typedef signed short    Sample;   // To represent a single audio "frame"
-typedef unsigned int    Time;     // measured in n samples
+typedef unsigned int    Time;     // measured in n samples, meaning x second is represented as x * SAMPLE_RATE
 
-static_assert(sizeof(unsigned char) == 1); // There you go, Rikke
-static_assert(sizeof(signed short)  == 2);
+static_assert(sizeof(byte)    == 1); // There you go, Rikke
+static_assert(sizeof(Sample)  == 2); // bitdepth/samplewidth == 16 (2 bytes)
+static_assert(sizeof(uint)    == 4); // 32 bit
 
 typedef enum Instrument { // we can expand this as much as we want
     SQUARE   = 0,
@@ -34,7 +40,7 @@ typedef enum Instrument { // we can expand this as much as we want
 typedef struct Envelope { // either preset or controlled by knobs/buttons on the PCB
     Time attack;
     Time decay;
-    Sample sustain; // percentage of volume
+    Sample sustain; // 'percentage' of volume to sustain at, from 0 to 0x7FFF
     Time release;
 } Envelope;
 
@@ -45,7 +51,7 @@ typedef struct Envelope { // either preset or controlled by knobs/buttons on the
 typedef struct FPGAGlobalState {
     Velocity   master_volume;
     Envelope   envelope;
-    Note       notes        [N_MIDI_CHANNELS];
+    float      pitchwheels [N_MIDI_CHANNELS];
 } FPGAGlobalState;
 
 typedef struct FPGAGeneratorState {
@@ -104,60 +110,69 @@ typedef struct FPGAGeneratorState {
 //       multiplication to maintain the scale, which is basically free on the fpga.
 
 
-// The FPGA state
+// The FPGA shared state
 static FPGAGlobalState    fpga_global_state;
-static FPGAGeneratorState generators[N_GENERATORS];
+static FPGAGeneratorState fpga_generators[N_GENERATORS];
 
 
-// This represents the 'mux', which combines the sound from all the generators
+// This represets the FPGA input handler
+void fpga_handle_spi_input(const unsigned char* data, size_t length) {
+    // TODO
+}
+
+
+// This represents the 'mux' module, which combines the sound from all the generators
 Sample generate_sound_sample() { // is run once per sound sample
     Sample out = 0;
 
     // this is trivial to do in parallel
     for (size_t generator_index = 0; generator_index < N_GENERATORS; generator_index++) {
         out += generate_sample_from_generator(generator_index);
-        generators[generator_index].note_life++; // tick time. IMPORTANT: do this only once per sample!
+        fpga_generators[generator_index].note_life++; // tick time. IMPORTANT: do this only once per sample!
     }
 
-    return sample * data->master_volume;
+    return sample * fpga_global_state->master_volume;
 }
 
 
-// this represents a single generator, which there are N_GENERATORS of on the FPGA
+// this represents a single generator module, which there are N_GENERATORS of on the FPGA
 Sample generate_sample_from_generator(uint generator_index) {
-    FPGAGeneratorState generator = &generators[generator_index]
+    FPGAGeneratorState generator = &fpga_generators[generator_index];
 
     if (generator->enabled) {
-        float freq = note_index_to_freq(generator->note_index);
+        float freq = note_index_to_freq(fpga_generator->note_index);
         freq *= fpga_global_state.pitchwheels[generator->channel_index]
         uint wavelength = freq_to_wavelength_in_samples(freq);
 
         Sample sample;
+        // NOTE: perhaps move these generators to separate chisel modules
         if (generator->instrument == SQUARE) {
             if (((generator->note_life * 2) / wavelength) % 2 == 1) {
-                sample = SAMPLE_MAX;
-            } else {
                 sample = -SAMPLE_MAX;
+            } else {
+                sample = SAMPLE_MAX;
             }
         }
-        if (generator->instrument == TRIANGLE) {
+        else if (generator->instrument == TRIANGLE) {
             sample = 0; // TODO
         }
-        if (generator->instrument == SAWTOOTH) {
+        else if (generator->instrument == SAWTOOTH) {
             sample = 0; // TODO
         }
-        if (generator->instrument == SINE) {
-            sample = SAMPLE_MAX * sin(2 * PI * generator->note_life / (wavelength));
+        else if (generator->instrument == SINE) {
+            // todo: convert float to integer
+            // sin(2*pi*x) should be a lookup-table, that ought to suffice
+            sample = round(SAMPLE_MAX * sin(2 * PI * generator->note_life / wavelength));
         }
-        return generator->velocity * sample;
-    } else{
+        return generator->velocity * apply_envelope(sample, generator->note_life);
+    } else {
         return 0;
     }
 }
 
 
+// this should be lookup table, only 128 possible input values
 float note_index_to_freq(NoteIndex note_index) {
-    // this should be lookup table, only 128 possible values
     return MIDI_A3_FREQ * pow(2, (note_index - MIDI_A3_INDEX) / 12);
 }
 
@@ -166,7 +181,8 @@ uint freq_to_wavelength_in_samples(float freq) {
     return round(SAMPLE_RATE / freq); // the rounding might need some dithering
 }
 
-Sample apply_envelope(Sample sample, Time note_life, Envelope envelope) {
+Sample apply_envelope(Sample sample, Time note_life) {
+    state->envelope;
     // TODO
-    return sample; // does nothing
+    return sample; // currently does nothing
 }
