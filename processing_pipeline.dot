@@ -1,0 +1,62 @@
+digraph G {
+	rankdir=LR;
+	overlap=false;
+//	concentrate=true
+
+	node [shape=box, style="filled", color="#ffbbbb"]
+	//jtag [label="JTAG-\nkonnektor x2"]
+	midi [label="MIDI\ninputport"]
+	btn  [label="Knapper x12\n(force sensitive)"]
+	vol  [label="Volume knob"]
+	//gpio [label="GPIO (70x)"]
+	jack [label="MiniJack"]
+
+	node [color="#bbbbff"]
+
+	subgraph cluster_0 {
+		label = "Mikroprosessor";
+		color = red;
+		//style = filled;
+
+		input_handler->delegator
+	}
+	vol -> input_handler
+	midi -> input_handler
+	btn -> input_handler
+
+	subgraph cluster_1 {
+		label = "FPGA";
+		color = blue;
+		//style = filled;
+
+		chan1 [label="Polytone channel #1\n(sound generator)"]
+		chan2 [label="Polytone channel #2\n(sound generator)"]
+		chan3 [label="Polytone channel #3\n(sound generator)"]
+		chan4 [label="Polytone channel #4\n(sound generator)"]
+		chan5 [label="Polytone channel #5\n(sound generator)"]
+		chan6 [label="Polytone channel #6\n(sound generator)"]
+		chan7 [label="Polytone channel #7\n(sound generator)"]
+		chan8 [label="Polytone channel #8\n(sound generator)"]
+
+		chan1 -> mux [label="note sound"]
+		chan2 -> mux [label="note sound"]
+		chan3 -> mux [label="note sound"]
+		chan4 -> mux [label="note sound"]
+		chan5 -> mux [label="note sound"]
+		chan6 -> mux [label="note sound"]
+		chan7 -> mux [label="note sound"]
+		chan8 -> mux [label="note sound"]
+	}
+	delegator->chan1 [label="SPI event"]
+	delegator->chan2 [label="SPI event"]
+	delegator->chan3 [label="SPI event"]
+	delegator->chan4 [label="SPI event"]
+	delegator->chan5 [label="SPI event"]
+	delegator->chan6 [label="SPI event"]
+	delegator->chan7 [label="SPI event"]
+	delegator->chan8 [label="SPI event"]
+
+	mux -> jack [label="combined audio"]
+
+
+}
