@@ -19,11 +19,12 @@ digraph G {
 	node [color="#ffbbbb"]
 	jtag          [label="JTAG-\nkonnektor x2"]
 	midi          [label="MIDI\ninputport"]
-	btn   [ label="Knapper x12\n(force sensitive)"]
-	vol   [ label="Volume knob"]
+	btn           [label="Knapper x12"]
+	btn2          [label="Menu buttons\n(yet to be defined)"]
+	vol           [label="Volume knob"]
 	gpio          [label="GPIO (70x)"]
 	jack          [label="MiniJack"]
-	{rank=same;jtag;midi;btn;}
+	{rank=same;jtag;midi;btn;btn2;}
 	{rank=same;gpio;jack;}
 
 	node [color="#bbffbb"]
@@ -35,11 +36,13 @@ digraph G {
 	jtag -> micro [label="flash"]
 	jtag -> flash
 	midi -> micro [label="UART"]
-	btn -> micro  [label="ADC"]
+	btn -> gpio   [label=""]
+	//btn -> micro  [label="ADC"]
+	btn2 -> micro [label="ADC"]
 	vol -> micro  [label="ADC"]
 
 	micro -> gpio [dir=both]
-	fpga -> gpio [dir=both]
+	fpga  -> gpio [dir=both]
 	//micro -> gpio -> micro
 	//fpga -> gpio -> fpga
 
@@ -51,7 +54,7 @@ digraph G {
 	micro -> fpga [label="SPI\nmed DMA:\l-keyboard state\l-sound envelope\l-perhaps samples\l"]
 	micro -> dac  [label="init"]
 	fpga -> dac   [label="samples"]
-	fpga -> caps [dir=both]
+	fpga -> caps  [dir=both]
 
 	clk -> micro
 	osc -> fpga
