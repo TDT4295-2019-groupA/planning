@@ -26,7 +26,7 @@ digraph G {
 	midi -> micro_input_handler
 	btn  -> micro_input_handler
 
-	delegator->fpga_input_handler [label="SPI packet. one of:\n========================\nmicrocontroller_send_global_state_update()\lmicrocontroller_send_generator_update()\l "]
+	delegator->fpga_input_handler [label="SPI packet. one of:\n========================\nmicrocontroller_send_global_state_update()\lmicrocontroller_send_generator_update(generator_index)\l "]
 
 	subgraph cluster_1 {
 		label = "FPGA";
