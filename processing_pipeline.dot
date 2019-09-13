@@ -44,17 +44,17 @@ digraph G {
 		chan7 [label="Polytone channel #7\n(sound generator)"]
 		chan8 [label="Polytone channel #8\n(sound generator)"]
 
-		fpga_input_handler->chan1 -> mux [label="note sound"]
-		fpga_input_handler->chan2 -> mux [label="note sound"]
-		fpga_input_handler->chan3 -> mux [label="note sound"]
-		fpga_input_handler->chan4 -> mux [label="note sound"]
-		fpga_input_handler->chan5 -> mux [label="note sound"]
-		fpga_input_handler->chan6 -> mux [label="note sound"]
-		fpga_input_handler->chan7 -> mux [label="note sound"]
-		fpga_input_handler->chan8 -> mux [label="note sound"]
+		fpga_input_handler->chan1 -> adder [label="note sound"]
+		fpga_input_handler->chan2 -> adder [label="note sound"]
+		fpga_input_handler->chan3 -> adder [label="note sound"]
+		fpga_input_handler->chan4 -> adder [label="note sound"]
+		fpga_input_handler->chan5 -> adder [label="note sound"]
+		fpga_input_handler->chan6 -> adder [label="note sound"]
+		fpga_input_handler->chan7 -> adder [label="note sound"]
+		fpga_input_handler->chan8 -> adder [label="note sound"]
 	}
 
-	mux -> jack [label="combined audio"]
+	adder -> jack [label="combined audio"]
 
 
 }
