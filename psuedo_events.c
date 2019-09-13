@@ -3,8 +3,9 @@
 
 
 
-// ========== DEFINITIONS ==================
-// shared by FPGA and the microcontroller
+// =======================================================
+// ================== DEFINITIONS ========================
+// =======================================================
 
 
 
@@ -42,7 +43,7 @@ typedef struct Envelope { // either preset or controlled by knobs/buttons on the
     Time decay;
     Sample sustain; // 'percentage' of volume to sustain at, from 0 to 0x7FFF
     Time release;
-} Envelope;
+} __attribute__((packed)) Envelope;
 
 
 // The following two structs represent the two packet types to be transmitted
@@ -52,7 +53,7 @@ typedef struct FPGAGlobalState {
     Velocity   master_volume;
     Envelope   envelope;
     float      pitchwheels [N_MIDI_CHANNELS];
-} FPGAGlobalState;
+} __attribute__((packed)) FPGAGlobalState;
 
 typedef struct FPGAGeneratorState {
     // this is the state stored on the FPGA, it is also the information sent over SPI from the microcontroller
@@ -60,18 +61,17 @@ typedef struct FPGAGeneratorState {
     // long it's been playing for how long, and which midi channel (pitchwheel) it is assigned to
     bool       enabled;           // whether the sound generator should be generating audio or not
     Instrument instrument;        // the index determining which waveform to use
-    NoteIndex  note_index    = 0; // to determine pitch/frequency
-    uint       channel_index = 0; // to know which pitchwheel to use
-    Velocity   velocity; // to know which pitchwheel to use
+    NoteIndex  note_index;        // to determine pitch/frequency
+    uint       channel_index;     // to know which pitchwheel to use
+    Velocity   velocity;          // to know which pitchwheel to use
 
     // this value is only stored on the FPGA only and is automatically reset to
     // 0 every time the FPGA recieves an event/update for this generator
-    Time      note_life     = 0; // The number of samples the note has been playing for, used to determine where in the envelope we are. It gets incremented for each sample generated
-} FPGAGeneratorState;
+    Time      note_life           // The number of samples the note has been playing for, used to determine where in the envelope we are. It gets incremented for each sample generated
+} __attribute__((packed)) FPGAGeneratorState;
 
 
 
-// ========== MICROPROCESSOR BEHAVIOUR ==================
 
 
 
@@ -79,9 +79,28 @@ typedef struct FPGAGeneratorState {
 // todo
 
 
+// =======================================================
+// ========== MICROCONTROLLER BEHAVIOUR ==================
+// =======================================================
 
 
-// ========== FPGA BEHAVIOUR ==================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// =======================================================
+// =================== FPGA BEHAVIOUR ====================
+// =======================================================
 
 
 
@@ -94,7 +113,7 @@ typedef struct FPGAGeneratorState {
 // ...     apply_envelope(
 // ...         generator.velocity * sin(
 // ...             2 * pi * (
-// ...                 note_index_to_freq(generator.note_index)
+// ...                 fpga_note_index_to_freq(generator.note_index)
 // ...                 + global_state.pitchwheels[generator.channel_index]
 // ...             ) * (generator.note_life / SAMPLERATE)
 // ...         ),
@@ -122,12 +141,12 @@ void fpga_handle_spi_input(const unsigned char* data, size_t length) {
 
 
 // This represents the 'mux' module, which combines the sound from all the generators
-Sample generate_sound_sample() { // is run once per sound sample
+Sample fpga_generate_sound_sample() { // is run once per sound sample
     Sample out = 0;
 
     // this is trivial to do in parallel
     for (size_t generator_index = 0; generator_index < N_GENERATORS; generator_index++) {
-        out += generate_sample_from_generator(generator_index);
+        out += fpga_generate_sample_from_generator(generator_index);
         fpga_generators[generator_index].note_life++; // tick time. IMPORTANT: do this only once per sample!
     }
 
@@ -136,11 +155,11 @@ Sample generate_sound_sample() { // is run once per sound sample
 
 
 // this represents a single generator module, which there are N_GENERATORS of on the FPGA
-Sample generate_sample_from_generator(uint generator_index) {
+Sample fpga_generate_sample_from_generator(uint generator_index) {
     FPGAGeneratorState generator = &fpga_generators[generator_index];
 
     if (generator->enabled) {
-        float freq = note_index_to_freq(fpga_generator->note_index);
+        float freq = fpga_note_index_to_freq(fpga_generator->note_index);
         freq *= fpga_global_state.pitchwheels[generator->channel_index]
         uint wavelength = freq_to_wavelength_in_samples(freq);
 
@@ -164,7 +183,7 @@ Sample generate_sample_from_generator(uint generator_index) {
             // sin(2*pi*x) should be a lookup-table, that ought to suffice
             sample = round(SAMPLE_MAX * sin(2 * PI * generator->note_life / wavelength));
         }
-        return generator->velocity * apply_envelope(sample, generator->note_life);
+        return generator->velocity * fpga_apply_envelope(sample, generator->note_life);
     } else {
         return 0;
     }
@@ -172,7 +191,7 @@ Sample generate_sample_from_generator(uint generator_index) {
 
 
 // this should be lookup table, only 128 possible input values
-float note_index_to_freq(NoteIndex note_index) {
+float fpga_note_index_to_freq(NoteIndex note_index) {
     return MIDI_A3_FREQ * pow(2, (note_index - MIDI_A3_INDEX) / 12);
 }
 
@@ -181,7 +200,7 @@ uint freq_to_wavelength_in_samples(float freq) {
     return round(SAMPLE_RATE / freq); // the rounding might need some dithering
 }
 
-Sample apply_envelope(Sample sample, Time note_life) {
+Sample fpga_apply_envelope(Sample sample, Time note_life) {
     state->envelope;
     // TODO
     return sample; // currently does nothing
