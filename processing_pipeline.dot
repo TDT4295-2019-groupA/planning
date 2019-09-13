@@ -1,7 +1,7 @@
 digraph G {
 	rankdir=LR;
 	overlap=false;
-//	concentrate=true
+	concentrate=true
 
 	node [shape=box, style="filled", color="#ffbbbb"]
 	//jtag [label="JTAG-\nkonnektor x2"]
@@ -17,17 +17,23 @@ digraph G {
 		label = "Mikroprosessor";
 		color = red;
 		//style = filled;
+		micro_input_handler [label="input handler"]
+		delegator           [label="delegator"]
 
-		input_handler->delegator
+		micro_input_handler->delegator
 	}
-	vol -> input_handler
-	midi -> input_handler
-	btn -> input_handler
+	vol  -> micro_input_handler
+	midi -> micro_input_handler
+	btn  -> micro_input_handler
+
+	delegator->fpga_input_handler [label="SPI packet. one of:\n========================\nmicrocontroller_send_global_state_update()\lmicrocontroller_send_generator_update()\l "]
 
 	subgraph cluster_1 {
 		label = "FPGA";
 		color = blue;
 		//style = filled;
+
+		fpga_input_handler
 
 		chan1 [label="Polytone channel #1\n(sound generator)"]
 		chan2 [label="Polytone channel #2\n(sound generator)"]
@@ -38,23 +44,15 @@ digraph G {
 		chan7 [label="Polytone channel #7\n(sound generator)"]
 		chan8 [label="Polytone channel #8\n(sound generator)"]
 
-		chan1 -> mux [label="note sound"]
-		chan2 -> mux [label="note sound"]
-		chan3 -> mux [label="note sound"]
-		chan4 -> mux [label="note sound"]
-		chan5 -> mux [label="note sound"]
-		chan6 -> mux [label="note sound"]
-		chan7 -> mux [label="note sound"]
-		chan8 -> mux [label="note sound"]
+		fpga_input_handler->chan1 -> mux [label="note sound"]
+		fpga_input_handler->chan2 -> mux [label="note sound"]
+		fpga_input_handler->chan3 -> mux [label="note sound"]
+		fpga_input_handler->chan4 -> mux [label="note sound"]
+		fpga_input_handler->chan5 -> mux [label="note sound"]
+		fpga_input_handler->chan6 -> mux [label="note sound"]
+		fpga_input_handler->chan7 -> mux [label="note sound"]
+		fpga_input_handler->chan8 -> mux [label="note sound"]
 	}
-	delegator->chan1 [label="SPI event"]
-	delegator->chan2 [label="SPI event"]
-	delegator->chan3 [label="SPI event"]
-	delegator->chan4 [label="SPI event"]
-	delegator->chan5 [label="SPI event"]
-	delegator->chan6 [label="SPI event"]
-	delegator->chan7 [label="SPI event"]
-	delegator->chan8 [label="SPI event"]
 
 	mux -> jack [label="combined audio"]
 
