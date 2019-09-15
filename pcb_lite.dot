@@ -1,9 +1,13 @@
 digraph asd {
     rankdir=LR;
-    Buttons -> micro -> FPGA -> DAC -> minijack
+    Buttons -> micro
+    Pots -> micro
     MIDI -> micro
+    micro -> FPGA -> DAC -> minijack
 
     edge [color=red]
     Buttons -> FPGA -> minijack
     MIDI -> FPGA
+    micro -> DAC
+    FPGA -> micro
 }
