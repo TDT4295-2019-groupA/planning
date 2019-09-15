@@ -1,6 +1,13 @@
 // some planning psuedo code just so that we're on the same page:
 // 'freq' is short for frequency
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <assert.h>
+#include <stdio.h>
+#include <math.h>
+#include <string.h>
 
 
 // =======================================================
@@ -24,18 +31,14 @@
 
 typedef unsigned int    uint;
 typedef unsigned char   byte;
-typedef unsigned int    ushort;
+typedef signed char     sbyte; // signed byte
+typedef unsigned short  ushort;
 typedef byte            NoteIndex;
 typedef byte            ChannelIndex;
 typedef byte            Velocity; // goes from 0 to 127
 typedef signed short    Sample;   // To represent a single audio "frame"
 typedef unsigned int    Time;     // measured in n samples, meaning x second is represented as x * SAMPLE_RATE
 
-static_assert(sizeof(byte)    == 1); // There you go, Rikke
-static_assert(sizeof(bool)    == 1);
-static_assert(sizeof(ushort)  == 2);
-static_assert(sizeof(Sample)  == 2); // bitdepth/samplewidth == 16 (2 bytes)
-static_assert(sizeof(uint)    == 4); // 32 bit
 
 typedef enum Instrument { // we can expand this as much as we want
     SQUARE   = 0,
@@ -43,8 +46,6 @@ typedef enum Instrument { // we can expand this as much as we want
     SAWTOOTH = 2,
     SINE     = 3,
 } Instrument;
-
-static_assert(sizeof(Instrument) == 4); // 32 bit
 
 typedef struct Envelope { // either preset or controlled by knobs/buttons on the PCB
     Time   attack;
@@ -60,7 +61,7 @@ typedef struct Envelope { // either preset or controlled by knobs/buttons on the
 typedef struct MicrocontrollerGlobalState {
     Velocity   master_volume;
     Envelope   envelope;
-    float      pitchwheels [N_MIDI_CHANNELS];
+    sbyte      pitchwheels [N_MIDI_CHANNELS];
 } __attribute__((packed)) MicrocontrollerGlobalState;
 
 
@@ -91,9 +92,6 @@ typedef struct FPGAGeneratorState {
 
 
 
-
-
-
 // =======================================================
 // ========== MICROCONTROLLER BEHAVIOUR ==================
 // =======================================================
@@ -106,32 +104,32 @@ typedef struct FPGAGeneratorState {
 
 // microcontroller state
 
-static MicroprocessorGlobalState    microcontroller_global_generator_state;
-static MicroprocessorGeneratorState microcontroller_generator_states[N_GENERATORS];
+static MicrocontrollerGlobalState    microcontroller_global_generator_state;
+static MicrocontrollerGeneratorState microcontroller_generator_states[N_GENERATORS];
 
 // This endpoint is responsible for pushing data over SPI to the FPGA
-void microcontroller_send_spi_packet(const uint* data, size_t length); // intentionally left undefined. To be implemented by the simulator
+void microcontroller_send_spi_packet(const byte* data, size_t length); // intentionally left undefined. To be implemented by the simulator
 
 // The following two functions sends update packets to the FPGA
 void microcontroller_send_global_state_update() {
-    byte data[1 + sizeof(FPGAGlobalState)];
+    byte data[1 + sizeof(MicrocontrollerGlobalState)];
 
     data[0] = 1; // global_state update
 
-    memcpy(data+1, &microcontroller_global_generator_state, sizeof(FPGAGlobalState));
+    memcpy(data+1, &microcontroller_global_generator_state, sizeof(MicrocontrollerGlobalState));
 
-    microcontroller_send_spi_packet(data, sizeof(data));
+    microcontroller_send_spi_packet((byte*)data, sizeof(data));
 }
 
 void microcontroller_send_generator_update(ushort generator_index, bool reset_note_lifetime) {
     // set reset_note_lifetime to true when sending note-on events
-    byte data[2 + sizeof(ushort) + sizeof(MicroprocessorGeneratorState)];
+    byte data[2 + sizeof(ushort) + sizeof(MicrocontrollerGeneratorState)];
 
     data[0] = 2; // generator update
 
     data[1] = (byte) reset_note_lifetime;
     *(ushort*)(&data[2]) = generator_index;
-    memcpy(data+2+sizeof(ushort), &microcontroller_generator_states[generator_index], sizeof(MicroprocessorGeneratorState));
+    memcpy(data+2+sizeof(ushort), &microcontroller_generator_states[generator_index], sizeof(MicrocontrollerGeneratorState));
 
     microcontroller_send_spi_packet(data, sizeof(data));
 }
@@ -152,13 +150,13 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
 
     // validate packet:
     for (size_t i = 1; i < length; i++)
-        if (bool(data[i] & 0x80) == (i==0))
+        if (((bool)(data[i] & 0x80)) == (i==0))
             return; // ignore invalid packets
 
     // interpret and handle packet:
     switch (packet_type) {
         // see https://www.midi.org/specifications-old/item/table-1-summary-of-midi-message
-        break; case 0x1000: { // note-off event
+        break; case 0b1000: { // note-off event
             assert(length == 3);
             ChannelIndex   channel  = type_specifier;
             NoteIndex      note     = data[1];
@@ -179,7 +177,7 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
             microcontroller_generator_states[idx].velocity      = velocity;
             microcontroller_send_generator_update(idx, false);
         }
-        break; case 0x1001: { // note-on event
+        break; case 0b1001: { // note-on event
             assert(length == 3);
             ChannelIndex   channel  = type_specifier;
             NoteIndex      note     = data[1];
@@ -196,13 +194,13 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
             microcontroller_generator_states[idx].velocity      = velocity;
             microcontroller_send_generator_update(idx, true);
         }
-        break; case 0x1010: /*IGNORE*/ // Polyphonic Key Pressure (Aftertouch) event
-        break; case 0x1011: /*IGNORE*/ // Control Change event
-        break; case 0x1100: /*IGNORE*/ // Program Chang event
-        break; case 0x1101: /*IGNORE*/ // Channel Pressure (After-touch) event
-        break; case 0x1110: /*IGNORE*/ // Pitch Bend Change event
-        break; case 0x1111: /*IGNORE*/ // System Exclusive event
-        break; default:                // unknown - ignored
+        break; case 0b1010: /*IGNORE*/ // Polyphonic Key Pressure (Aftertouch) event
+        break; case 0b1011: /*IGNORE*/ // Control Change event
+        break; case 0b1100: /*IGNORE*/ // Program Chang event
+        break; case 0b1101: /*IGNORE*/ // Channel Pressure (After-touch) event
+        break; case 0b1110: /*IGNORE*/ // Pitch Bend Change event
+        break; case 0b1111: /*IGNORE*/ // System Exclusive event
+        break; default: break;         // unknown - ignored
     }
 }
 
@@ -249,48 +247,57 @@ static FPGAGlobalState    fpga_global_state;
 static FPGAGeneratorState fpga_generators[N_GENERATORS];
 
 
+
+// this should be lookup table, only 128 possible input values
+float fpga_note_index_to_freq(NoteIndex note_index) {
+    return MIDI_A3_FREQ * pow(2, (note_index - MIDI_A3_INDEX) / 12);
+}
+
+uint freq_to_wavelength_in_samples(float freq) {
+    // todo: convert freq to an integer
+    return round(SAMPLE_RATE / freq); // the rounding might need some dithering
+}
+
+Sample fpga_apply_envelope(Sample sample, Time note_life) {
+    fpga_global_state.envelope.attack;
+    fpga_global_state.envelope.decay;
+    fpga_global_state.envelope.sustain;
+    fpga_global_state.envelope.release;
+    // TODO
+    return sample; // currently does nothing
+}
+
+
 // This represets the FPGA's SPI input handler
 void fpga_handle_spi_packet(const byte* data, size_t length) {
-    packet_type = data[0];
+    byte packet_type = data[0];
 
     if (packet_type == 1) { // global_state update
-        if (length >= 1 + sizeof(FPGAGlobalState)) {
-            memcpy(&fpga_global_state, data+1, sizeof(FPGAGlobalState));
+        if (length >= 1 + sizeof(MicrocontrollerGlobalState)) {
+            memcpy(&fpga_global_state, data+1, sizeof(MicrocontrollerGlobalState));
         }
     }
     else if (packet_type == 2) { // generator_state update
-        if (length >= 2 + sizeof(uint) + sizeof(MicroprocessorGeneratorState)) {
+        if (length >= 2 + sizeof(uint) + sizeof(MicrocontrollerGeneratorState)) {
             bool reset_note_lifetime = (bool)data[1];
             ushort generator_index = *(ushort*)(data+2);
-            memcpy(&fpga_generators[generator_index].note, data + 2 + sizeof(ushort), sizeof(FPGAGeneratorState));
-            if reset_note_lifetime
+            memcpy(&fpga_generators[generator_index].data, data + 2 + sizeof(ushort), sizeof(MicrocontrollerGeneratorState));
+            if (reset_note_lifetime) {
+                fpga_generators[generator_index].note_life = 0; // make sure this doesn't conflict with the incrmentation after generating a sample
+            }
         }
     }
     // ignore unknown packets
 }
 
 
-// This represents the 'adder' module, which combines the sound from all the generators
-Sample fpga_generate_sound_sample() { // is run once per sound sample
-    Sample out = 0;
-
-    // this is trivial to do in parallel
-    for (size_t generator_index = 0; generator_index < N_GENERATORS; generator_index++) {
-        out += fpga_generate_sample_from_generator(generator_index);
-        fpga_generators[generator_index].note_life++; // tick time. IMPORTANT: do this only once per sample!
-    }
-
-    return sample * fpga_global_state->master_volume;
-}
-
-
 // this represents a single generator module, which there are N_GENERATORS of on the FPGA
 Sample fpga_generate_sample_from_generator(uint generator_index) {
-    FPGAGeneratorState generator = &fpga_generators[generator_index];
+    const FPGAGeneratorState* generator = &fpga_generators[generator_index];
 
     if (generator->data.enabled) {
-        float freq = fpga_note_index_to_freq(fpga_generator->data.note_index);
-        freq *= fpga_global_state.pitchwheels[generator->data.channel_index]
+        float freq = fpga_note_index_to_freq(generator->data.note_index);
+        freq *= fpga_global_state.pitchwheels[generator->data.channel_index]; // todo, account for pitchwheels type change from float to sbyte
         uint wavelength = freq_to_wavelength_in_samples(freq);
 
         Sample sample;
@@ -320,18 +327,41 @@ Sample fpga_generate_sample_from_generator(uint generator_index) {
 }
 
 
-// this should be lookup table, only 128 possible input values
-float fpga_note_index_to_freq(NoteIndex note_index) {
-    return MIDI_A3_FREQ * pow(2, (note_index - MIDI_A3_INDEX) / 12);
+// This represents the 'adder' module, which combines the sound from all the generators
+Sample fpga_generate_sound_sample() { // is run once per sound sample
+    Sample out = 0;
+
+    // this is trivial to do in parallel
+    for (size_t generator_index = 0; generator_index < N_GENERATORS; generator_index++) {
+        out += fpga_generate_sample_from_generator(generator_index);
+        fpga_generators[generator_index].note_life++; // tick time. IMPORTANT: do this only once per sample!
+    }
+
+    return out * fpga_global_state.master_volume;
 }
 
-uint freq_to_wavelength_in_samples(float freq) {
-    // todo: convert freq to an integer
-    return round(SAMPLE_RATE / freq); // the rounding might need some dithering
-}
 
-Sample fpga_apply_envelope(Sample sample, Time note_life) {
-    state->data.envelope;
-    // TODO
-    return sample; // currently does nothing
+
+
+
+
+
+
+
+
+
+
+// =======================================================
+// ================== DEFINITIONS ========================
+// =======================================================
+
+
+
+void do_sanity_check() {
+    static_assert(sizeof(byte)    == 1); // There you go, Rikke
+    static_assert(sizeof(bool)    == 1);
+    static_assert(sizeof(ushort)  == 2);
+    static_assert(sizeof(Sample)  == 2); // bitdepth/samplewidth == 16 (2 bytes)
+    static_assert(sizeof(uint)    == 4); // 32 bit
+    static_assert(sizeof(Instrument) == 4); // 32 bit
 }
