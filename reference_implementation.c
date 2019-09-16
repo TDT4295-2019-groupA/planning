@@ -22,10 +22,11 @@
 #define N_MIDI_KEYS     128
 #define N_MIDI_CHANNELS 16
 #define MIDI_A3_INDEX   45    /* see https://www.noterepeat.com/articles/how-to/213-midi-basics-common-terms-explained */
+#define MIDI_A3_INDEX   58    /* see https://www.noterepeat.com/articles/how-to/213-midi-basics-common-terms-explained */
 #define MIDI_A3_FREQ    440.0 /* no, i won't listen to your A=432Hz bullshit */
 #define VELOCITY_MAX    128
-#define SAMPLE_MAX      0x7FFF
-#define N_GENERATORS    8 /* number of supported notes playing simultainiously  (polytones), \
+#define SAMPLE_MAX      0xF/*0x7FFF*/
+#define N_GENERATORS    16/* number of supported notes playing simultainiously  (polytones), \
                              subject to change, chisel and microcontroller code \
                              should scale from this single variable alone */
 
@@ -36,7 +37,8 @@ typedef unsigned short  ushort;
 typedef byte            NoteIndex;
 typedef byte            ChannelIndex;
 typedef byte            Velocity; // goes from 0 to 127
-typedef signed short    Sample;   // To represent a single audio "frame"
+typedef signed short    Sample;   // To represent a single audio "frame", output from each sound generator
+typedef signed int      WSample;  // Used to avoid overflow, the final output type from FPGA
 typedef unsigned int    Time;     // measured in n samples, meaning x second is represented as x * SAMPLE_RATE
 
 
@@ -59,7 +61,7 @@ typedef struct Envelope { // either preset or controlled by knobs/buttons on the
 // from the microcontroller to the FPGA:
 
 typedef struct MicrocontrollerGlobalState {
-    Velocity   master_volume;
+    ushort     master_volume;
     Envelope   envelope;
     sbyte      pitchwheels [N_MIDI_CHANNELS];
 } __attribute__((packed)) MicrocontrollerGlobalState;
@@ -69,11 +71,11 @@ typedef struct MicrocontrollerGeneratorState {
     // this is the state of a single fpga generator as seen on the microprocessor,
     // it is also the packet sent over SPI from the microcontroller to the FPGA
     // It represents the state of a single sound generator
-    bool       enabled;           // whether the sound generator should be generating audio or not
-    Instrument instrument;        // the index determining which waveform to use
-    NoteIndex  note_index;        // to determine pitch/frequency
-    uint       channel_index;     // to know which pitchwheel to use
-    Velocity   velocity;          // to know which pitchwheel to use
+    bool         enabled;           // whether the sound generator should be generating audio or not
+    Instrument   instrument;        // the index determining which waveform to use
+    NoteIndex    note_index;        // to determine pitch/frequency
+    ChannelIndex channel_index;     // to know which pitchwheel to use
+    Velocity     velocity;          // to know which pitchwheel to use
 } __attribute__((packed)) MicrocontrollerGeneratorState;
 
 // the following two types are the internal state of the FPGA
@@ -149,8 +151,8 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
     byte type_specifier = (status_byte & 0x0F);
 
     // validate packet:
-    for (size_t i = 1; i < length; i++)
-        if (((bool)(data[i] & 0x80)) == (i==0))
+    for (size_t i = 0; i < length; i++)
+        if (!( ((data[i] & 0x80) == 0) || (i == 0) ))
             return; // ignore invalid packets
 
     // interpret and handle packet:
@@ -158,11 +160,11 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
         // see https://www.midi.org/specifications-old/item/table-1-summary-of-midi-message
         break; case 0b1000: { // note-off event
             assert(length == 3);
-            ChannelIndex   channel  = type_specifier;
-            NoteIndex      note     = data[1];
-            Velocity       velocity = data[2];
+            ChannelIndex channel  = type_specifier;
+            NoteIndex    note     = data[1];
+            Velocity     velocity = data[2];
 
-            // find the sound generator currenty playing this note
+            // find the sound generator currenty playing this note (we should perhaps keep an index/lookup)
             uint idx = 0; // sound_generator_index
             while (idx < N_GENERATORS && !(
                 microcontroller_generator_states[idx].enabled
@@ -171,7 +173,7 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
             )) idx++;
             if (idx >= N_GENERATORS) return; // none found, probably due to the note-on being ignored due to lack of generators
 
-            microcontroller_generator_states[idx].enabled       = true;
+            microcontroller_generator_states[idx].enabled       = false;
             microcontroller_generator_states[idx].note_index    = note;
             microcontroller_generator_states[idx].channel_index = channel;
             microcontroller_generator_states[idx].velocity      = velocity;
@@ -179,20 +181,37 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
         }
         break; case 0b1001: { // note-on event
             assert(length == 3);
-            ChannelIndex   channel  = type_specifier;
-            NoteIndex      note     = data[1];
-            Velocity       velocity = data[2];
+            ChannelIndex channel  = type_specifier;
+            NoteIndex    note     = data[1];
+            Velocity     velocity = data[2];
+            if (velocity > 0) {
+                // find vacant sound generator
+                uint idx = 0; // sound_generator_index
+                while (idx < N_GENERATORS && microcontroller_generator_states[idx].enabled) idx++;
+                if (idx >= N_GENERATORS) return; // out of sound generators, ignore
 
-            // find vacant sound generator
-            uint idx = 0; // sound_generator_index
-            while (idx < N_GENERATORS && microcontroller_generator_states[idx].enabled) idx++;
-            if (idx >= N_GENERATORS) return; // out of sound generators, ignore
+                microcontroller_generator_states[idx].enabled       = true;
+                microcontroller_generator_states[idx].note_index    = note;
+                microcontroller_generator_states[idx].channel_index = channel;
+                microcontroller_generator_states[idx].velocity      = velocity;
+                microcontroller_send_generator_update(idx, true);
+            } else { // people suck at following the MIDI standard
 
-            microcontroller_generator_states[idx].enabled       = true;
-            microcontroller_generator_states[idx].note_index    = note;
-            microcontroller_generator_states[idx].channel_index = channel;
-            microcontroller_generator_states[idx].velocity      = velocity;
-            microcontroller_send_generator_update(idx, true);
+                // find the sound generator currenty playing this note (we should perhaps keep an index/lookup)
+                uint idx = 0; // sound_generator_index
+                while (idx < N_GENERATORS && !(
+                    microcontroller_generator_states[idx].enabled
+                    && microcontroller_generator_states[idx].note_index    == note
+                    && microcontroller_generator_states[idx].channel_index == channel
+                )) idx++;
+                if (idx >= N_GENERATORS) return; // none found, probably due to the note-on being ignored due to lack of generators
+
+                microcontroller_generator_states[idx].enabled       = false;
+                microcontroller_generator_states[idx].note_index    = note;
+                microcontroller_generator_states[idx].channel_index = channel;
+                microcontroller_generator_states[idx].velocity      = velocity;
+                microcontroller_send_generator_update(idx, false);
+            }
         }
         break; case 0b1010: /*IGNORE*/ // Polyphonic Key Pressure (Aftertouch) event
         break; case 0b1011: /*IGNORE*/ // Control Change event
@@ -250,7 +269,7 @@ static FPGAGeneratorState fpga_generators[N_GENERATORS];
 
 // this should be lookup table, only 128 possible input values
 float fpga_note_index_to_freq(NoteIndex note_index) {
-    return MIDI_A3_FREQ * pow(2, (note_index - MIDI_A3_INDEX) / 12);
+    return MIDI_A3_FREQ * pow(2.0, (note_index - MIDI_A3_INDEX) / 12.f);
 }
 
 uint freq_to_wavelength_in_samples(float freq) {
@@ -278,7 +297,7 @@ void fpga_handle_spi_packet(const byte* data, size_t length) {
         }
     }
     else if (packet_type == 2) { // generator_state update
-        if (length >= 2 + sizeof(uint) + sizeof(MicrocontrollerGeneratorState)) {
+        if (length >= 2 + sizeof(ushort) + sizeof(MicrocontrollerGeneratorState)) {
             bool reset_note_lifetime = (bool)data[1];
             ushort generator_index = *(ushort*)(data+2);
             memcpy(&fpga_generators[generator_index].data, data + 2 + sizeof(ushort), sizeof(MicrocontrollerGeneratorState));
@@ -297,11 +316,11 @@ Sample fpga_generate_sample_from_generator(uint generator_index) {
 
     if (generator->data.enabled) {
         float freq = fpga_note_index_to_freq(generator->data.note_index);
-        freq *= fpga_global_state.pitchwheels[generator->data.channel_index]; // todo, account for pitchwheels type change from float to sbyte
+        //freq *= fpga_global_state.pitchwheels[generator->data.channel_index]; // TODO, account for pitchwheels type change from float to sbyte
         uint wavelength = freq_to_wavelength_in_samples(freq);
 
         Sample sample;
-        // NOTE: perhaps move these generators to separate chisel modules
+        // NOTE: perhaps move these generators to separate chisel modules and wire them in
         if (generator->data.instrument == SQUARE) {
             if (((generator->note_life * 2) / wavelength) % 2 == 1) {
                 sample = -SAMPLE_MAX;
@@ -328,15 +347,14 @@ Sample fpga_generate_sample_from_generator(uint generator_index) {
 
 
 // This represents the 'adder' module, which combines the sound from all the generators
-Sample fpga_generate_sound_sample() { // is run once per sound sample
-    Sample out = 0;
+WSample fpga_generate_sound_sample() { // is run once per sound sample
+    WSample out = 0;
 
     // this is trivial to do in parallel
     for (size_t generator_index = 0; generator_index < N_GENERATORS; generator_index++) {
         out += fpga_generate_sample_from_generator(generator_index);
         fpga_generators[generator_index].note_life++; // tick time. IMPORTANT: do this only once per sample!
     }
-
     return out * fpga_global_state.master_volume;
 }
 
@@ -363,5 +381,5 @@ void do_sanity_check() {
     static_assert(sizeof(ushort)  == 2);
     static_assert(sizeof(Sample)  == 2); // bitdepth/samplewidth == 16 (2 bytes)
     static_assert(sizeof(uint)    == 4); // 32 bit
-    static_assert(sizeof(Instrument) == 4); // 32 bit
+    static_assert(sizeof(Instrument) == 4); // 32 bit - todo: make this smaller?
 }
