@@ -50,6 +50,8 @@ def main():
 		print(" "*3, __file__, "<midifile> [flags]")
 		print("flags:")
 		print("\t-p   play output (trumps the rest)")
+		print("\t-w   make wav (using SOX)")
+		print("\t-3   make mp3 (using LAME)")
 		print("\t-s   enable spi dump")
 		print("\t-n   enable n samples dump")
 		print("\t-o   enable sample dump")
@@ -67,7 +69,13 @@ def main():
 
 
 	if "-p" in flags:
-		run(["bash", "-c", f"./sim.out -r | aplay -c 1 -f S32_BE -r 44100"])
+		run(["bash", "-c", f"./sim.out -r | aplay -c 1 -f S32_LE -r 44100"])
+	elif "-w" in flags:
+		run(["bash", "-c", f"./sim.out -r | sox -t raw -r 44100 -e signed -b 32 -c 1 - -r 44100 {quote(filename+'.wav')}"])
+		print(f"output written to {filename+'.wav'}")
+	elif "-3" in flags:
+		run(["bash", "-c", f"./sim.out -r | lame -r -s 44.1 --bitwidth 32 --signed -m mono - {quote(filename+'.mp3')}"])
+		print(f"output written to {filename+'.mp3'}")
 	else:
 		run(["./sim.out", *flags])
 

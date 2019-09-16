@@ -39,12 +39,11 @@ void generate_samples(size_t n) {
 		if (enable_sample_dump)     printf("Sample: %i\n", s);
 		if (enable_raw_sample_dump) {
 
-			printf("%c", (s>> 24) & 0xFF);
-			printf("%c", (s>> 16) & 0xFF);
-			printf("%c", (s>> 8)  & 0xFF);
 			printf("%c", (s>> 0)  & 0xFF);
+			printf("%c", (s>> 8)  & 0xFF);
+			printf("%c", (s>> 16) & 0xFF);
+			printf("%c", (s>> 24) & 0xFF);
 		}
-
 	}
 }
 

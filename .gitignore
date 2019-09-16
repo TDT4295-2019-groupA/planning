@@ -1,2 +1,5 @@
 simulator/sim.out
 simulator/song.c
+simulator/*.mid
+simulator/*.mp3
+simulator/*.wav
