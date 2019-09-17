@@ -163,7 +163,8 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
     // interpret and handle packet:
     switch (packet_type) {
         // see https://www.midi.org/specifications-old/item/table-1-summary-of-midi-message
-        break; case 0b1000: { // note-off event
+        break; case 0b1000: { note_off_event:
+
             assert(length == 3);
             ChannelIndex channel  = type_specifier;
             NoteIndex    note     = data[1];
@@ -193,35 +194,19 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
             Velocity     velocity = data[2];
 
             if (channel == 9) return; // ignore drums
+            if (velocity == 0) goto note_off_event; // people suck at following the midi standard
 
-            if (velocity > 0) {
-                // find vacant sound generator
-                uint idx = 0; // sound_generator_index
-                while (idx < N_GENERATORS && microcontroller_generator_states[idx].enabled) idx++;
-                if (idx >= N_GENERATORS) return; // out of sound generators, ignore. TODO: print warning
+            // find vacant sound generator
+            uint idx = 0; // sound_generator_index
+            while (idx < N_GENERATORS && microcontroller_generator_states[idx].enabled) idx++;
+            if (idx >= N_GENERATORS) return; // out of sound generators, ignore. TODO: print warning
 
-                microcontroller_generator_states[idx].enabled       = true;
-                microcontroller_generator_states[idx].note_index    = note;
-                microcontroller_generator_states[idx].channel_index = channel;
-                microcontroller_generator_states[idx].velocity      = velocity;
-                microcontroller_send_generator_update(idx, true);
-            } else { // people suck at following the MIDI standard
+            microcontroller_generator_states[idx].enabled       = true;
+            microcontroller_generator_states[idx].note_index    = note;
+            microcontroller_generator_states[idx].channel_index = channel;
+            microcontroller_generator_states[idx].velocity      = velocity;
+            microcontroller_send_generator_update(idx, true);
 
-                // find the sound generator currenty playing this note (we should perhaps keep an index/lookup)
-                uint idx = 0; // sound_generator_index
-                while (idx < N_GENERATORS && !(
-                    microcontroller_generator_states[idx].enabled
-                    && microcontroller_generator_states[idx].note_index    == note
-                    && microcontroller_generator_states[idx].channel_index == channel
-                )) idx++;
-                if (idx >= N_GENERATORS) return; // none found, probably due to the note-on being ignored due to lack of generators
-
-                microcontroller_generator_states[idx].enabled       = false;
-                microcontroller_generator_states[idx].note_index    = note;
-                microcontroller_generator_states[idx].channel_index = channel;
-                microcontroller_generator_states[idx].velocity      = velocity;
-                microcontroller_send_generator_update(idx, false);
-            }
         }
         break; case 0b1010: /*IGNORE*/ // Polyphonic Key Pressure (Aftertouch) event
         break; case 0b1011: /*IGNORE*/ // Control Change event
