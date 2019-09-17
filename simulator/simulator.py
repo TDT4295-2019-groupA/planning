@@ -65,7 +65,7 @@ def main():
 		events = convert_mido_midi_to_c_simulator_events(sys.argv[1])
 		write_song_c(events)
 
-		run("gcc main.c -lm -O3 -o sim.out") # compile
+	run("gcc main.c -lm -O3 -o sim.out") # compile
 
 
 	if "-p" in flags:

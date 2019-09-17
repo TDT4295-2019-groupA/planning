@@ -39,10 +39,10 @@ void generate_samples(size_t n) {
 		if (enable_sample_dump)     printf("Sample: %i\n", s);
 		if (enable_raw_sample_dump) {
 
-			printf("%c", (s>> 0)  & 0xFF);
-			printf("%c", (s>> 8)  & 0xFF);
-			printf("%c", (s>> 16) & 0xFF);
-			printf("%c", (s>> 24) & 0xFF);
+			printf("%c", *(((byte*)&s)+0));
+			printf("%c", *(((byte*)&s)+1));
+			printf("%c", *(((byte*)&s)+2));
+			printf("%c", *(((byte*)&s)+3));
 		}
 	}
 }
@@ -61,7 +61,7 @@ int main(int argc, char const *argv[]) {
 		else if (!strcmp(argv[i], "-r")) enable_raw_sample_dump = true;
 	}
 
-	microcontroller_global_generator_state.master_volume = 0xffff;
+	microcontroller_global_generator_state.master_volume = 0xFF;
 	microcontroller_send_global_state_update();
 
 	simulate();
