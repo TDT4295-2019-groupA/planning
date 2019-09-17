@@ -300,7 +300,7 @@ void fpga_handle_spi_packet(const byte* data, size_t length) {
     if (packet_type == 1) { // global_state update
         if (length >= 1 + sizeof(MicrocontrollerGlobalState)) {
 
-            // write each byte into where they belong, this could perhaps be a bit more hardcoded on the FPGA
+            // write each byte into where they belong, this could perhaps be a bit more hardcoded on the FPGA on where the wires go
             for (size_t i = 0; i < sizeof(MicrocontrollerGlobalState); i++) {
                 *(((byte*)&fpga_global_state) + i) = *(data + 1 + i);
             }
@@ -313,7 +313,7 @@ void fpga_handle_spi_packet(const byte* data, size_t length) {
             bool reset_note_lifetime = (bool)data[1];
             ushort generator_index = *(ushort*)(data+2);
 
-            // write each byte into where they belong, this could perhaps be a bit more hardcoded on the FPGA
+            // write each byte into where they belong, this could perhaps be a bit more hardcoded on the FPGA on where the wires go
             byte* generator_data_ptr = &fpga_generators[generator_index].data;
             for (size_t i = 0; i < sizeof(MicrocontrollerGeneratorState); i++) {
                 *(generator_data_ptr + i) = *(data + 2 + sizeof(ushort) + i);

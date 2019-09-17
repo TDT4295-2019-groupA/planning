@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-from mido import MidiFile
 from functools import partial
-import sys
-import subprocess
+from mido import MidiFile
 from shlex import split, quote
+import subprocess
+import sys
 
 SAMPLERATE = 44100
 
@@ -11,7 +11,6 @@ def run(cmd, *args, **kwargs):
 	if isinstance(cmd, str):
 		cmd = split(cmd)
 	return subprocess.run(cmd, *args, **kwargs)
-
 
 def convert_mido_midi_to_c_simulator_events(filename):
 	t = 0
@@ -28,19 +27,9 @@ def convert_mido_midi_to_c_simulator_events(filename):
 		data = "".join(f"\\x{i:X}" for i in msg.bytes())
 		yield f"midi_event(\"{data}\", {len(msg.bytes())});"
 
-
 def write_song_c(lines):
 	with open("song.c", "w") as f:
 		f.write("\n".join(lines) + "\n")
-
-
-#play
-# aplay -c 1 -f S16_LE -r 44100
-#wav
-# sox -t raw -r 44100 -e unsigned -b 8 -c 1 - -r 44100 out.wav
-#mp3
-# lame -r -s 44.1 --bitwidth 8 --unsigned -m mono - out.mp3
-
 
 def main():
 	if len(sys.argv) <= 1:
@@ -63,8 +52,6 @@ def main():
 		write_song_c(events)
 
 	run("gcc main.c -lm -o sim.out") # compile
-	#run("gcc main.c -lm -O3 -o sim.out") # compile
-
 
 	if "-p" in flags:
 		run(["bash", "-c", f"./sim.out -r | aplay -c 1 -f S32_LE -r 44100"])
