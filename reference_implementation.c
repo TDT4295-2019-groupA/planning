@@ -9,6 +9,10 @@
 #include <math.h>
 #include <string.h>
 
+// you know we're in for a good time right now
+#define when      if
+#define elsewhen  else if
+#define otherwise else
 
 // =======================================================
 // ================== DEFINITIONS ========================
@@ -297,8 +301,8 @@ Sample fpga_apply_envelope(Sample sample, WTime note_life) {
 void fpga_handle_spi_packet(const byte* data, size_t length) {
     byte packet_type = data[0];
 
-    if (packet_type == 1) { // global_state update
-        if (length >= 1 + sizeof(MicrocontrollerGlobalState)) {
+    when(packet_type == 1) { // global_state update
+        when(length >= 1 + sizeof(MicrocontrollerGlobalState)) {
 
             // write each byte into where they belong, this could perhaps be a bit more hardcoded on the FPGA on where the wires go
             for (size_t i = 0; i < sizeof(MicrocontrollerGlobalState); i++) {
@@ -307,8 +311,8 @@ void fpga_handle_spi_packet(const byte* data, size_t length) {
 
         }
     }
-    else if (packet_type == 2) { // generator_state update
-        if (length >= 2 + sizeof(ushort) + sizeof(MicrocontrollerGeneratorState)) {
+    elsewhen (packet_type == 2) { // generator_state update
+        when (length >= 2 + sizeof(ushort) + sizeof(MicrocontrollerGeneratorState)) {
 
             bool reset_note_lifetime = (bool)data[1];
             ushort generator_index = *(ushort*)(data+2);
@@ -319,7 +323,7 @@ void fpga_handle_spi_packet(const byte* data, size_t length) {
                 *(generator_data_ptr + i) = *(data + 2 + sizeof(ushort) + i);
             }
 
-            if (reset_note_lifetime) {
+            when (reset_note_lifetime) {
                 fpga_generators[generator_index].note_life = 0; // make sure this doesn't conflict with the incrmentation after generating a sample
             }
         }
@@ -330,29 +334,29 @@ void fpga_handle_spi_packet(const byte* data, size_t length) {
 
 // this represents a single generator module, which there are N_GENERATORS of on the FPGA
 Sample fpga_generate_sample_from_generator(uint generator_index) {
-    const FPGAGeneratorState* generator = &fpga_generators[generator_index];
+    const FPGAGeneratorState* generator = &fpga_generators[generator_index]; // just a reference, not a copy
 
-    if (generator->data.enabled) {
+    when (generator->data.enabled) {
         float freq = fpga_note_index_to_freq(generator->data.note_index);
         //freq *= fpga_global_state.pitchwheels[generator->data.channel_index]; // TODO, account for pitchwheels type change from float to sbyte
         uint wavelength = freq_to_wavelength_in_samples(freq);
 
         Sample sample;
         // NOTE: perhaps move these generators to separate chisel modules and just wire them in
-        if (generator->data.instrument == SQUARE) {
-            if (((generator->note_life * 2) / wavelength) % 2 == 1) {
+        when (generator->data.instrument == SQUARE) {
+            when (((generator->note_life * 2) / wavelength) % 2 == 1) {
                 sample = -SAMPLE_MAX;
-            } else {
+            } otherwise {
                 sample = SAMPLE_MAX;
             }
         }
-        else if (generator->data.instrument == TRIANGLE) {
+        elsewhen (generator->data.instrument == TRIANGLE) {
             sample = 0; // TODO
         }
-        else if (generator->data.instrument == SAWTOOTH) {
+        elsewhen (generator->data.instrument == SAWTOOTH) {
             sample = ((generator->note_life % wavelength) * 2 - wavelength) * SAMPLE_MAX  / wavelength;
         }
-        else if (generator->data.instrument == SINE) {
+        elsewhen (generator->data.instrument == SINE) {
             // todo: convert float to integer
             // sin(2*pi*x) should be a lookup-table, that ought to suffice
             sample = round(SAMPLE_MAX * sin(2 * PI * generator->note_life / wavelength));
@@ -360,7 +364,7 @@ Sample fpga_generate_sample_from_generator(uint generator_index) {
 
         // the divide at the end should be represented as a bit-shift
         return fpga_apply_envelope(sample, generator->note_life) * generator->data.velocity / VELOCITY_MAX;
-    } else {
+    } otherwise {
         return 0;
     }
 }
