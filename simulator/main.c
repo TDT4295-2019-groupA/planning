@@ -17,27 +17,34 @@ TODO:
  - write sound output to stdout/file
 */
 
+// a print statement which is able to print even while outputting raw PCM data to stdout:
+#define print(...) {if (enable_raw_sample_dump) {fprintf(stderr, __VA_ARGS__); fflush(stderr);} else {printf(__VA_ARGS__);}}
+
+// hook the two parts of the reference implementation together:
 void microcontroller_send_spi_packet(const byte* data, size_t length) {
 	if (enable_spi_dump) {
-		printf("SPI packet:");
+		print("SPI packet:");
 		for (size_t i = 0; i < length; i++) {
-			printf(" %02X", data[i]);
+			print(" %02X", data[i]);
 		}
-		printf("\n");
+		print("\n");
 	}
+	fflush(stderr);
 	fpga_handle_spi_packet(data, length);
 }
+
+
+// our simulator events:
 
 #define midi_event(data, length) \
 	microcontroller_handle_midi_event((const byte*) data, length)
 
 void generate_samples(size_t n) {
-	if (enable_n_samples_dump)  printf("Step %d samples\n", n);
+	if (enable_n_samples_dump)  print("Step %d samples\n", n);
 	for (size_t i = 0; i < n; i++) {
 		WSample s = fpga_generate_sound_sample();
-		if (enable_sample_dump)     printf("Sample: %i\n", s);
-		if (enable_raw_sample_dump) {
-
+		if (enable_sample_dump)     print("Sample: %i\n", s);
+		if (enable_raw_sample_dump) { // little endian 32bit signed output
 			printf("%c", *(((byte*)&s)+0));
 			printf("%c", *(((byte*)&s)+1));
 			printf("%c", *(((byte*)&s)+2));
@@ -46,8 +53,8 @@ void generate_samples(size_t n) {
 	}
 }
 
-// too hacky 4 u
-void simulate() {
+// load in the events created by python script
+void simulate() { // 2hacky4u
 #include "song.c"
 }
 
