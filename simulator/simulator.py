@@ -26,7 +26,7 @@ def convert_mido_midi_to_c_simulator_events(filename):
 		if msg.is_meta: continue
 
 		data = "".join(f"\\x{i:X}" for i in msg.bytes())
-		yield f"midi_event((const byte*) \"{data}\", {len(msg.bytes())});"
+		yield f"midi_event(\"{data}\", {len(msg.bytes())});"
 
 
 def write_song_c(lines):
@@ -62,7 +62,8 @@ def main():
 		events = convert_mido_midi_to_c_simulator_events(sys.argv[1])
 		write_song_c(events)
 
-	run("gcc main.c -lm -O3 -o sim.out") # compile
+	run("gcc main.c -lm -o sim.out") # compile
+	#run("gcc main.c -lm -O3 -o sim.out") # compile
 
 
 	if "-p" in flags:

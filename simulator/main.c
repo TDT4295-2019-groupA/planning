@@ -28,9 +28,8 @@ void microcontroller_send_spi_packet(const byte* data, size_t length) {
 	fpga_handle_spi_packet(data, length);
 }
 
-void midi_event(const byte* data, size_t length) {
-	microcontroller_handle_midi_event(data, length);
-}
+#define midi_event(data, length) \
+	microcontroller_handle_midi_event((const byte*) data, length)
 
 void generate_samples(size_t n) {
 	if (enable_n_samples_dump)  printf("Step %d samples\n", n);
