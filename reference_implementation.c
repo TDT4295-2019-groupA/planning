@@ -350,7 +350,7 @@ Sample fpga_generate_sample_from_generator(uint generator_index) {
             sample = 0; // TODO
         }
         else if (generator->data.instrument == SAWTOOTH) {
-            sample = 0; // TODO
+            sample = ((generator->note_life % wavelength) * 2 - wavelength) * SAMPLE_MAX  / wavelength;
         }
         else if (generator->data.instrument == SINE) {
             // todo: convert float to integer
