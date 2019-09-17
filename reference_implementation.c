@@ -221,7 +221,7 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
         }
         break; case 0b1010: /*IGNORE*/ // Polyphonic Key Pressure (Aftertouch) event
         break; case 0b1011: /*IGNORE*/ // Control Change event
-        break; case 0b1100: /*IGNORE*/ // Program Chang event
+        break; case 0b1100: /*IGNORE*/ // Program Change event
         break; case 0b1101: /*IGNORE*/ // Channel Pressure (After-touch) event
         break; case 0b1110: /*IGNORE*/ // Pitch Bend Change event
         break; case 0b1111: /*IGNORE*/ // System Exclusive event
@@ -314,7 +314,7 @@ void fpga_handle_spi_packet(const byte* data, size_t length) {
             ushort generator_index = *(ushort*)(data+2);
 
             // write each byte into where they belong, this could perhaps be a bit more hardcoded on the FPGA on where the wires go
-            byte* generator_data_ptr = &fpga_generators[generator_index].data;
+            byte* generator_data_ptr = (byte*)&fpga_generators[generator_index].data;
             for (size_t i = 0; i < sizeof(MicrocontrollerGeneratorState); i++) {
                 *(generator_data_ptr + i) = *(data + 2 + sizeof(ushort) + i);
             }
