@@ -53,7 +53,7 @@ typedef enum Instrument { // we can expand this as much as we want
 typedef struct Envelope { // either preset or controlled by knobs/buttons on the PCB
     Time   attack;
     Time   decay;
-    byte   sustain; // 'percentage' of volume to sustain at, from 0 to 0xFF
+    byte   sustain; // 'perbyteage' of volume to sustain at, ranges from 0 to 0xFF
     Time   release;
 } __attribute__((packed)) Envelope;
 
@@ -194,7 +194,7 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
                 // find vacant sound generator
                 uint idx = 0; // sound_generator_index
                 while (idx < N_GENERATORS && microcontroller_generator_states[idx].enabled) idx++;
-                if (idx >= N_GENERATORS) return; // out of sound generators, ignore
+                if (idx >= N_GENERATORS) return; // out of sound generators, ignore. TODO: print warning
 
                 microcontroller_generator_states[idx].enabled       = true;
                 microcontroller_generator_states[idx].note_index    = note;
@@ -380,7 +380,7 @@ WSample fpga_generate_sound_sample() { // is run once per sound sample
         fpga_generators[generator_idx].note_life++;
     }
 
-    return out * fpga_global_state.master_volume << 6; // 6 bits headroom
+    return out * fpga_global_state.master_volume << 4; // 4 bits headroom
 }
 
 
