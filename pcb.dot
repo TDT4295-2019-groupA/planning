@@ -18,11 +18,11 @@ digraph G {
 
 	node [color="#ffbbbb"]
 	jtag          [label="JTAG-\nkonnektor x2"]
-	midi          [label="MIDI\ninputport"]
+	midi          [label="5pin MIDI\ninputport"]
 	btn           [label="Knapper x12"]
 	btn2          [label="Menu buttons\n(yet to be defined)"]
 	vol           [label="Volume knob"]
-	gpio          [label="GPIO (70x)"]
+	gpio          [label="Physical GPIO\n(~70x pins?)\n"]
 	jack          [label="MiniJack"]
 	{rank=same;jtag;midi;btn;btn2;}
 	{rank=same;gpio;jack;}
@@ -34,11 +34,11 @@ digraph G {
 
 	// input
 	jtag -> micro [label="flash"]
-	jtag -> flash
+	jtag -> fpga [label="flash"]
 	midi -> micro [label="UART"]
-	btn -> gpio   [label=""]
+	btn -> micro   [label=""]
 	//btn -> micro  [label="ADC"]
-	btn2 -> micro [label="ADC"]
+	btn2 -> micro
 	vol -> micro  [label="ADC"]
 
 	micro -> gpio [dir=both]
@@ -50,25 +50,25 @@ digraph G {
 	dac -> jack
 
 	// internal
-	flash -> fpga [label="flash"]
+	fpga -> flash [dir=both, label="flash"]
 	micro -> fpga [label="SPI\nmed DMA:\l-keyboard state\l-sound envelope\l-perhaps samples\l"]
 	micro -> dac  [label="init"]
 	fpga -> dac   [label="samples"]
-	fpga -> caps  [dir=both]
 
 	clk -> micro
 	osc -> fpga
 
 
-
-	edge [color="red", dir=none]
+	edge [color="red", dir=none, constraint=false]
+	PSU -> dac
 	PSU -> fpga
 	PSU -> micro
 	PSU -> clk
 	PSU -> osc
-	PSU -> dac
+	PSU -> flash
 
-	edge [color="gray", dir=forward]
+	edge [color="gray", dir=forward, constraint=true]
+	PSU -> caps  [dir=both]
 	VCC -> PSU -> GND
 	/*
 	VCC -> midi -> GND
