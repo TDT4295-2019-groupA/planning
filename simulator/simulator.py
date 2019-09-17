@@ -25,9 +25,6 @@ def convert_mido_midi_to_c_simulator_events(filename):
 
 		if msg.is_meta: continue
 
-		if hasattr(msg, "channel") and msg.channel == 9:
-			continue # ignore drums
-
 		data = "".join(f"\\x{i:X}" for i in msg.bytes())
 		yield f"midi_event((const byte*) \"{data}\", {len(msg.bytes())});"
 

@@ -165,6 +165,8 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
             NoteIndex    note     = data[1];
             Velocity     velocity = data[2];
 
+            if (channel == 9) return; // ignore drums
+
             // find the sound generator currenty playing this note (we should perhaps keep an index/lookup)
             uint idx = 0; // sound_generator_index
             while (idx < N_GENERATORS && !(
@@ -185,6 +187,9 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
             ChannelIndex channel  = type_specifier;
             NoteIndex    note     = data[1];
             Velocity     velocity = data[2];
+
+            if (channel == 9) return; // ignore drums
+
             if (velocity > 0) {
                 // find vacant sound generator
                 uint idx = 0; // sound_generator_index
