@@ -1,0 +1,21 @@
+digraph G {
+	bgcolor=none;
+
+	node [shape=box, style=filled, fillcolor=white]
+
+	chisel  [label="Our chisel code"]
+	FPGAROM [label="FPGA ROM"]
+
+	chisel -> FIRRTL  [label="
+		$ sbt run
+	"]
+	FIRRTL -> Verilog [label="
+		$ firrtl -i FPGATopLevel.fir -o FPGATopLevel.v
+	"]
+	Verilog-> FPGAROM [label="
+		$ (WIP) Vivedo FPGATopLevel.v FPGATopLevel.rom
+	"]
+	FPGAROM-> FPGA    [label="
+		$ ?????
+	"]
+}
