@@ -25,8 +25,8 @@
 #define SAMPLE_RATE     44100
 #define N_MIDI_KEYS     128
 #define N_MIDI_CHANNELS 16    /* remember, we ignore the channel dedicated to drums */
-#define MIDI_A3_INDEX   45    /* see https://www.noterepeat.com/articles/how-to/213-midi-basics-common-terms-explained */
-#define MIDI_A3_INDEX   58    /* see https://www.noterepeat.com/articles/how-to/213-midi-basics-common-terms-explained */
+//#define MIDI_A3_INDEX   45    /* see https://www.noterepeat.com/articles/how-to/213-midi-basics-common-terms-explained */
+#define MIDI_A3_INDEX   58    /* shifting everything down an octave sounds better */
 #define MIDI_A3_FREQ    440.0 /* no, i won't listen to your A=432Hz bullshit */
 #define VELOCITY_MAX    0x7f  /* 7 bits */
 #define SAMPLE_MAX      0x7FFF /* max output from a single generator */
@@ -108,6 +108,28 @@ typedef struct FPGAGeneratorState {
 
 
 
+// microcontroller pin definition stuff
+
+const uint BUTTON_INDEX_TO_PIN_MAP[] = { // change this as needed on the actual microcontroller
+    0, //  note button 1
+    1, //  note button 2
+    2, //  note button 3
+    3, //  note button 4
+    4, //  note button 5
+    5, //  note button 6
+    6, //  note button 7
+    7, //  note button 8
+    8, //  note button 9
+    9, //  note button 10
+    10, // note button 11
+    11, // note button 12
+    12, // control button 1
+    13, // control button 2
+    14, // control button 3
+    15, // control button 4
+};
+const uint BUTTON_COUNT = sizeof(BUTTON_INDEX_TO_PIN_MAP) / sizeof(uint);
+
 
 // microcontroller state
 
@@ -141,12 +163,7 @@ void microcontroller_send_generator_update(ushort generator_index, bool reset_no
     microcontroller_send_spi_packet(data, sizeof(data));
 }
 
-// The following two functions are our input handlers
-void microcontroller_handle_button_event(uint button_index) { // called when button is pushed down
-    // The GPIO interrupt handler should call this function
-
-    // TODO
-}
+// The following three functions are our input handlers:
 
 void microcontroller_handle_midi_event(const byte *data, size_t length) {
     // The UART interrupt handler should call this function when it has recieved a full midi event
@@ -218,6 +235,105 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
     }
 }
 
+bool microcontroller_poll_pcb_button_state(uint button_id); // polls the button index for its state, returns true if it is currently held down
+
+void microcontroller_handle_button_event() { // called when any button is either pushed down or released
+    // TODO: how/where do we handle debounce?
+    // The IO interrupt handler should call this function
+
+    for (size_t button_index = 0; button_index < BUTTON_COUNT; button_index++) {
+        bool button_pushed_down = microcontroller_poll_pcb_button_state(BUTTON_INDEX_TO_PIN_MAP[button_index]);
+        switch (button_index) {
+            break; case 0: { // note button 1
+                microcontroller_handle_midi_event((button_pushed_down)
+                    ? (const byte*)"\x90\x30\x7f"  // C4 note on,  midi channel 0
+                    : (const byte*)"\x80\x30\x00", // C4 note off, midi channel 0
+                    3);
+            }
+            break; case 1: { // note button 2
+                microcontroller_handle_midi_event((button_pushed_down)
+                    ? (const byte*)"\x90\x31\x7f"  // C#4 note on,  midi channel 0
+                    : (const byte*)"\x80\x31\x00", // C#4 note off, midi channel 0
+                    3);
+            }
+            break; case 2: { // note button 3
+                microcontroller_handle_midi_event((button_pushed_down)
+                    ? (const byte*)"\x90\x32\x7f"  // D4 note on,  midi channel 0
+                    : (const byte*)"\x80\x32\x00", // D4 note off, midi channel 0
+                    3);
+            }
+            break; case 3: { // note button 4
+                microcontroller_handle_midi_event((button_pushed_down)
+                    ? (const byte*)"\x90\x33\x7f"  // D#4 note on,  midi channel 0
+                    : (const byte*)"\x80\x33\x00", // D#4 note off, midi channel 0
+                    3);
+            }
+            break; case 4: { // note button 5
+                microcontroller_handle_midi_event((button_pushed_down)
+                    ? (const byte*)"\x90\x34\x7f"  // E4 note on,  midi channel 0
+                    : (const byte*)"\x80\x34\x00", // E4 note off, midi channel 0
+                    3);
+            }
+            break; case 5: { // note button 6
+                microcontroller_handle_midi_event((button_pushed_down)
+                    ? (const byte*)"\x90\x35\x7f"  // F4 note on,  midi channel 0
+                    : (const byte*)"\x80\x35\x00", // F4 note off, midi channel 0
+                    3);
+            }
+            break; case 6: { // note button 7
+                microcontroller_handle_midi_event((button_pushed_down)
+                    ? (const byte*)"\x90\x36\x7f"  // F#4 note on,  midi channel 0
+                    : (const byte*)"\x80\x36\x00", // F#4 note off, midi channel 0
+                    3);
+            }
+            break; case 7: { // note button 8
+                microcontroller_handle_midi_event((button_pushed_down)
+                    ? (const byte*)"\x90\x37\x7f"  // G4 note on,  midi channel 0
+                    : (const byte*)"\x80\x37\x00", // G4 note off, midi channel 0
+                    3);
+            }
+            break; case 8: { // note button 9
+                microcontroller_handle_midi_event((button_pushed_down)
+                    ? (const byte*)"\x90\x38\x7f"  // G#4 note on,  midi channel 0
+                    : (const byte*)"\x80\x38\x00", // G#4 note off, midi channel 0
+                    3);
+            }
+            break; case 9: { // note button 10
+                microcontroller_handle_midi_event((button_pushed_down)
+                    ? (const byte*)"\x90\x39\x7f"  // A4 note on,  midi channel 0
+                    : (const byte*)"\x80\x39\x00", // A4 note off, midi channel 0
+                    3);
+            }
+            break; case 10: { // note button 11
+                microcontroller_handle_midi_event((button_pushed_down)
+                    ? (const byte*)"\x90\x3a\x7f"  // A#4 note on,  midi channel 0
+                    : (const byte*)"\x80\x3a\x00", // A#4 note off, midi channel 0
+                    3);
+            }
+            break; case 11: { // note button 12
+                microcontroller_handle_midi_event((button_pushed_down)
+                    ? (const byte*)"\x90\x3b\x7f"  // B4 note on,  midi channel 0
+                    : (const byte*)"\x80\x3b\x00", // B4 note off, midi channel 0
+                    3);
+            }
+            break; case 12: { // control button 1
+                /* CODE TODO */
+            }
+            break; case 13: { // control button 2
+                /* CODE TODO */
+            }
+            break; case 14: { // control button 3
+                /* CODE TODO */
+            }
+            break; case 15: { // control button 4
+                /* CODE TODO */
+            }
+            break; default: break; // ignore rest
+        }
+    }
+
+    // TODO
+}
 
 
 

@@ -20,6 +20,9 @@ TODO:
 // a print statement which is able to print even while outputting raw PCM data to stdout:
 #define print(...) {if (enable_raw_sample_dump) {fprintf(stderr, __VA_ARGS__); fflush(stderr);} else {printf(__VA_ARGS__);}}
 
+
+// define missing functions in reference implementation:
+
 // hook the two parts of the reference implementation together:
 void microcontroller_send_spi_packet(const byte* data, size_t length) {
 	if (enable_spi_dump) {
@@ -31,6 +34,11 @@ void microcontroller_send_spi_packet(const byte* data, size_t length) {
 	}
 	fflush(stderr);
 	fpga_handle_spi_packet(data, length);
+}
+
+// no pcb buttons are pressed:
+bool microcontroller_poll_pcb_button_state(uint button_id) {
+	return false; // no buttons are held down
 }
 
 
