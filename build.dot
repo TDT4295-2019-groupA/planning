@@ -1,21 +1,45 @@
 digraph G {
-	bgcolor=none;
-
+	//rankdir=LR;
+	labeljust=L;
 	node [shape=box, style=filled, fillcolor=white]
+	edge [fontname="monospace"]
 
-	chisel  [label="Our chisel code"]
-	FPGAROM [label="FPGA ROM"]
+	chisel    [label="Our chisel code"]
+	reference [label="Our reference\nimplenentation"]
+	FIRRTL    [label="FIRRTL representation\n( FPGATopLevel.fir )"]
+	Verilog   [label="Verilog HDL representation\n( FPGATopLevel.v )"]
+	simulator [label="Cycle-accurate\nFGPA C++ simulator"]
+	FPGAROM   [label="FPGA FLASH ROM"]
+	test_data [label="FPGA\ntest data"]
 
-	chisel -> FIRRTL  [label="
-		$ sbt run
-	"]
-	FIRRTL -> Verilog [label="
-		$ firrtl -i FPGATopLevel.fir -o FPGATopLevel.v
-	"]
+	node [shape=ellipse]
+	FPGA
+	test      [label="specific test in chisel"]
+
+	test_data->chisel [constraint=false]
+
+	reference -> test_data [label="\
+		\ \ $ cd planning/simulator\l\
+		\ \ $ ./simulator.py my_midi_file.mid -s -o -n > events.txt\l"]
+
+
+	chisel -> FIRRTL  [label="\
+		\ \ $ cd FPGA\l\
+		\ \ $ sbt run\l"]
+	chisel -> test  [label="\
+		\ \ $ cd FPGA\l\
+		\ \ $ sbt testOnly mytest\l"]
+
+	FIRRTL -> Verilog [label="\
+		\ \ $ cd FPGA\l\
+		\ \ $ firrtl -i FPGATopLevel.fir -o FPGATopLevel.v\l"]
+	Verilog -> simulator [label="\
+		\ \ $ cd FPGA\l\
+		\ \ $ verilator FPGATopLevel.v \l"]
 	Verilog-> FPGAROM [label="
-		$ (WIP) Vivedo FPGATopLevel.v FPGATopLevel.rom
-	"]
+		\ \ $ cd FPGA\l\
+		\ \ $ (WIP) vivedo FPGATopLevel.v FPGATopLevel.something\l"]
 	FPGAROM-> FPGA    [label="
-		$ ?????
-	"]
+		\ \ $ ?????\l\
+		\ \ $ ?????\l"]
 }
