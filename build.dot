@@ -9,11 +9,11 @@ digraph G {
 	FIRRTL    [label="FIRRTL representation\n( FPGATopLevel.fir )"]
 	Verilog   [label="Verilog HDL representation\n( FPGATopLevel.v )"]
 	simulator [label="Cycle-accurate\nFGPA C++ simulator"]
-	FPGAROM   [label="FPGA FLASH ROM"]
+	FPGABIT   [label="FPGA bitfile"]
 	test_data [label="FPGA\ntest data"]
 
 	node [shape=ellipse]
-	FPGA
+	FPGA [label="FPGA doing stuff!"]
 	test      [label="specific test in chisel"]
 
 	test_data->chisel [constraint=false]
@@ -36,10 +36,27 @@ digraph G {
 	Verilog -> simulator [label="\
 		\ \ $ cd FPGA\l\
 		\ \ $ verilator FPGATopLevel.v \l"]
-	Verilog-> FPGAROM [label="
-		\ \ $ cd FPGA\l\
-		\ \ $ (WIP) vivedo FPGATopLevel.v FPGATopLevel.something\l"]
-	FPGAROM-> FPGA    [label="
-		\ \ $ ?????\l\
-		\ \ $ ?????\l"]
+	Verilog-> FPGABIT [label="\
+		\ \ open vivado:\l\
+		\ \ \ 1. Click the green play button at the top of the Vivado screen.\l\
+		\ \ \ 2. Select \"Run Synthesis\".\l\
+		\ \ \ \ \ \ -\ If a \"Launch Runs\" dialog appears then select \"Don't show this dialog again\" and click \"OK\".\l\
+		\ \ \ \ \ \ -\ In the top right of your Vivado window, you'll see a message \"Running synth_design\".\l\
+		\ \ \ 3. A dialog will appear prompting you to \"Run Implementation\".\l\
+		\ \ \ \ \ \ -\ Click \"OK\" to start implementation.\l\
+		\ \ \ 4. A dialog will appear saying \"Implementation successfully completed\".\l\
+		\ \ \ \ \ \ -\ Select \"Generate Bitstream\" and click \"OK\".\l\
+		\ \ \ 5. A dialog will appear saying \"Bitstream Generation successfully completed\".\l\
+		\ \ \ \ \ \ -\ Select \"Open Hardware Manager\" and click \"OK\".\l"]
+	FPGABIT-> FPGA    [label="\
+		\ \ still in vivado:\l\
+		\ \ \ 6. Connect your Arty board to your PC using a micro USB cable.\l\
+		\ \ \ 7. At the bottom left of Vivado select \"Open Target\" under \"Open Hardware Manager\".\l\
+		\ \ \ 8. Choose \"Auto Connect\" from the menu.\l\
+		\ \ \ 9. Select \"Program Device\" under \"Open Hardware Manager\".\l\
+		\ \ 10. There should be one option \"xc7a35t_0\"; this is your Arty board.\l\
+		\ \ 11. Browse to your bitstream file FPGATopLevel.bit.\l\
+		\ \ 12. Click \"Program\".\l"]
+
+// /opt/Xilinx/Vivado/2019.1/data/xicom/cable_drivers/lin64/install_script/install_drivers/install_digilent.sh
 }
