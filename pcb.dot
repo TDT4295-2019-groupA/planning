@@ -22,7 +22,7 @@ digraph G {
 	btn           [label="Knapper x12"]
 	btn2          [label="Menu buttons\n(yet to be defined)"]
 	vol           [label="Volume knob"]
-	gpio          [label="Physical GPIO\n(~70x pins?)\n"]
+	gpio          [label="Physical GPIO\n(~20 pins?)\n"]
 	jack          [label="MiniJack"]
 	{rank=same;jtag;midi;btn;btn2;}
 	{rank=same;gpio;jack;}
@@ -51,21 +51,12 @@ digraph G {
 
 	// internal
 	fpga -> flash [dir=both, label="flash"]
-	micro -> fpga [label="SPI\nmed DMA:\l-keyboard state\l-sound envelope\l-perhaps samples\l"]
+	micro -> fpga [label="SPI med DMA:\l-keyboard state\l-sound envelope\l-perhaps samples\l"]
 	micro -> dac  [label="init"]
-	fpga -> dac   [label="samples"]
+	fpga -> dac   [label="I2S"]
 
 	clk -> micro
 	osc -> fpga
-
-
-	edge [color="red", dir=none, constraint=false]
-	PSU -> dac
-	PSU -> fpga
-	PSU -> micro
-	PSU -> clk
-	PSU -> osc
-	PSU -> flash
 
 	edge [color="gray", dir=forward, constraint=true]
 	PSU -> caps  [dir=both]
