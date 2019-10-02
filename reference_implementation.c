@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
 #include <math.h>
@@ -234,7 +235,15 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
         break; case 0b1011: /*IGNORE*/ // Control Change event
         break; case 0b1100: /*IGNORE*/ // Program Change event
         break; case 0b1101: /*IGNORE*/ // Channel Pressure (After-touch) event
-        break; case 0b1110: /*IGNORE*/ // Pitch Bend Change event
+        break; case 0b1110: {          // Pitch Bend Change event
+            assert(length == 3);
+            ChannelIndex channel  = type_specifier;
+            short decoded = ((data[2]&0x7F) << 7 | (data[1]&0x7F)) - 0x2000;
+            sbyte pitchwheel = decoded >> 6;
+
+            microcontroller_global_generator_state.pitchwheels[channel] = pitchwheel;
+            microcontroller_send_global_state_update();
+        }
         break; case 0b1111: /*IGNORE*/ // System Exclusive event
         break; default: break;         // unknown - ignored
     }
@@ -449,7 +458,15 @@ Sample fpga_generate_sample_from_generator(uint generator_index) {
 
     when (generator->data.enabled) {
         uint freq = fpga_note_index_to_freq(generator->data.note_index);
-        //freq *= fpga_global_state.pitchwheels[generator->data.channel_index]; // TODO, account for pitchwheels type change from float to sbyte
+
+        // this whole conversion from pitchwheel value to frequency coefficient ought to be a lookup table
+        // this LuT doesn't even have to be inside each generator, if we
+        // instead preprocess the pitchwheel value as we recieve the SPI generator
+        // update packet
+        float note_offset = 2.0 * ((float)(fpga_global_state.pitchwheels[generator->data.channel_index])) / 128.0;
+        uint freq_coeff = round(pow(2.0, note_offset/12.0) * (1 << FREQ_SHIFT));
+
+        freq = ((unsigned long long)(freq) * freq_coeff) >> FREQ_SHIFT;
         uint wavelength = freq_to_wavelength_in_samples(freq);
 
         // due to the way registers work, the chisel version requires the +1
