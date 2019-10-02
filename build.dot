@@ -57,6 +57,4 @@ digraph G {
 		\ \ 10. There should be one option \"xc7a35t_0\"; this is your Arty board.\l\
 		\ \ 11. Browse to your bitstream file FPGATopLevel.bit.\l\
 		\ \ 12. Click \"Program\".\l"]
-
-// /opt/Xilinx/Vivado/2019.1/data/xicom/cable_drivers/lin64/install_script/install_drivers/install_digilent.sh
 }

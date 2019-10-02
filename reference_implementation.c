@@ -219,6 +219,8 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
             while (idx < N_GENERATORS && microcontroller_generator_states[idx].enabled) idx++;
             if (idx >= N_GENERATORS) return; // out of sound generators, ignore. TODO: print warning
 
+            // TODO: set instrument, probably just have it as a global variable
+            // or in a array like the pitchwheels
             microcontroller_generator_states[idx].enabled       = true;
             microcontroller_generator_states[idx].note_index    = note;
             microcontroller_generator_states[idx].channel_index = channel;
