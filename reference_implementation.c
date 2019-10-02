@@ -23,6 +23,7 @@
 
 #define PI              3.1415926535
 #define SAMPLE_RATE     44100
+#define NOTE_LIFE_COEFF 10    /* scaling factor when dealing with note_life*/
 #define N_MIDI_KEYS     128
 #define N_MIDI_CHANNELS 16    /* remember, we ignore the channel dedicated to drums */
 //#define MIDI_A3_INDEX   45    /* see https://www.noterepeat.com/articles/how-to/213-midi-basics-common-terms-explained */
@@ -388,7 +389,7 @@ float fpga_note_index_to_freq(NoteIndex note_index) {
 
 uint freq_to_wavelength_in_samples(float freq) {
     // todo: convert freq to an integer
-    return round(SAMPLE_RATE / freq); // the rounding might need some dithering
+    return round(SAMPLE_RATE / freq * NOTE_LIFE_COEFF); // the rounding might need some dithering
 }
 
 Sample fpga_apply_envelope(Sample sample, WTime note_life) {
@@ -443,8 +444,8 @@ Sample fpga_generate_sample_from_generator(uint generator_index) {
 
     // make sure this is only stepped up once per sample, meaning we might need
     // some kind of enable pin, because using multiple clock domains is a nightmare
-    generator->note_life++;
-    generator->wavelength_pos++;
+    generator->note_life      += NOTE_LIFE_COEFF;
+    generator->wavelength_pos += NOTE_LIFE_COEFF;
 
     when (generator->data.enabled) {
         float freq = fpga_note_index_to_freq(generator->data.note_index);
