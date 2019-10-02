@@ -23,6 +23,7 @@
 
 #define PI              3.1415926535
 #define SAMPLE_RATE     44100
+#define FREQ_SHIFT      12    /* scaling factor (bit shifts) when dealing with frequencies */
 #define NOTE_LIFE_COEFF 10    /* scaling factor when dealing with note_life*/
 #define N_MIDI_KEYS     128
 #define N_MIDI_CHANNELS 16    /* remember, we ignore the channel dedicated to drums */
@@ -383,13 +384,12 @@ static FPGAGeneratorState fpga_generators[N_GENERATORS];
 
 
 // this should be lookup table, only 128 possible input values
-float fpga_note_index_to_freq(NoteIndex note_index) {
-    return MIDI_A3_FREQ * pow(2.0, (note_index - MIDI_A3_INDEX) / 12.f);
+uint fpga_note_index_to_freq(NoteIndex note_index) {
+    return round((1<<FREQ_SHIFT) * MIDI_A3_FREQ * pow(2.0, (note_index - MIDI_A3_INDEX) / 12.f));
 }
 
-uint freq_to_wavelength_in_samples(float freq) {
-    // todo: convert freq to an integer
-    return round(SAMPLE_RATE / freq * NOTE_LIFE_COEFF); // the rounding might need some dithering
+uint freq_to_wavelength_in_samples(uint freq) {
+    return (SAMPLE_RATE << FREQ_SHIFT) * NOTE_LIFE_COEFF / freq;
 }
 
 Sample fpga_apply_envelope(Sample sample, WTime note_life) {
@@ -448,10 +448,12 @@ Sample fpga_generate_sample_from_generator(uint generator_index) {
     generator->wavelength_pos += NOTE_LIFE_COEFF;
 
     when (generator->data.enabled) {
-        float freq = fpga_note_index_to_freq(generator->data.note_index);
+        uint freq = fpga_note_index_to_freq(generator->data.note_index);
         //freq *= fpga_global_state.pitchwheels[generator->data.channel_index]; // TODO, account for pitchwheels type change from float to sbyte
         uint wavelength = freq_to_wavelength_in_samples(freq);
 
+        // due to the way registers work, the chisel version requires the +1
+        // here, feel free to tweak the operator instead
         when (generator->wavelength_pos/*+1*/ >= wavelength) {
             generator->wavelength_pos = 0;
         }
