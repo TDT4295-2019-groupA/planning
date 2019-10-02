@@ -463,7 +463,17 @@ Sample fpga_generate_sample_from_generator(uint generator_index) {
             }
         }
         elsewhen (generator->data.instrument == TRIANGLE) {
-            sample = 0; // TODO
+            // if x has a wavelength of 4:
+            //     f(x) = abs((x+1) % 4 - 2) - 1
+            int half    = wavelength>>1;
+            int quarter = wavelength>>2;
+            int pos;
+            when (generator->wavelength_pos > half + quarter) {
+                pos = generator->wavelength_pos - half - quarter;
+            } otherwise {
+                pos = generator->wavelength_pos + quarter;
+            }
+            sample = (abs(pos - half) - quarter) * SAMPLE_MAX / quarter;
         }
         elsewhen (generator->data.instrument == SAWTOOTH) {
             //sample = ((generator->note_life % wavelength) * 2 - wavelength) * SAMPLE_MAX  / wavelength;
