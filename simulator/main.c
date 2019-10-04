@@ -80,7 +80,34 @@ int main(int argc, char const *argv[]) {
 	}
 
 	microcontroller_global_generator_state.master_volume = 0xFF;
+	// hardcoded envelope settings for now
+
+	microcontroller_global_generator_state.envelope.attack  = 0.04 * SAMPLE_RATE;
+	microcontroller_global_generator_state.envelope.decay   = 0.2 * SAMPLE_RATE;
+	microcontroller_global_generator_state.envelope.sustain = 0.6 * 0xff;
+	microcontroller_global_generator_state.envelope.release = 0.2 * SAMPLE_RATE;
+
 	microcontroller_send_global_state_update();
+
+	// just some code to visualize the current envelope when the note is held half a second
+	/*
+	fpga_generators[0].note_life = 0;
+	fpga_generators[0].data.enabled = true;
+	for (size_t i = 0; i < SAMPLE_RATE; i++) {
+		fpga_generators[0].note_life += NOTE_LIFE_COEFF;
+		if (i == SAMPLE_RATE/2) fpga_generators[0].data.enabled = false;
+		if (i == SAMPLE_RATE/2) fpga_generators[0].note_life = 0;
+		Sample s = fpga_apply_envelope(SAMPLE_MAX, &fpga_generators[0]);
+		printf("%d\n", s);
+	}
+	return 0;
+	*/
+
+	// hardcoded instruments for now
+
+	for (size_t i = 0; i < N_GENERATORS; i++) {
+		microcontroller_generator_states[i].instrument = SQUARE;
+	}
 
 	simulate();
 	return 0;

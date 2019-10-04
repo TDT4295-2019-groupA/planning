@@ -22,20 +22,48 @@ def convert_midi_to_c_simulator_events(filename):
 		if msg.time > 0: # round-about way of tracking time to avoid cumulating rounding errors
 			t += msg.time
 			n = int(t * SAMPLERATE)
-			yield f"generate_samples({n - n_samples});"
+			yield f"generate_samples({n - n_samples});\n"
 			n_samples = n
 
 		if msg.is_meta: continue
 
-		data = "".join(f"\\x{i:X}" for i in msg.bytes())
-		yield f"midi_event(\"{data}\", {len(msg.bytes())});"
+		data = "".join(f"\\x{i:02X}" for i in msg.bytes())
+		yield f"midi_event(\"{data}\", {len(msg.bytes())});\n"
+
+def convert_black_midi_to_c_simulator_events(filename):
+	# this won't cause gcc to balloon up to use 20+ GB of RAM on black midis
+	yield "struct asd {const char* data; unsigned char len; unsigned int n_samples;};\n"
+	yield "static const struct asd data[] = {\n"
+
+	t = 0
+	n_samples = 0
+	prev_n_samples = 0
+	for msg in MidiFile(filename):
+		if msg.time > 0: # round-about way of tracking time to avoid cumulating rounding errors
+			t += msg.time
+			n_samples = int(t * SAMPLERATE)
+
+		if msg.is_meta: continue
+
+		data = "".join(f"\\x{i:02X}" for i in msg.bytes())
+		yield f"\t{{\"{data}\", {len(msg.bytes())}, {n_samples - prev_n_samples}}},\n"
+		prev_n_samples = n_samples
+
+	yield "};\n\n"
+	yield "for (size_t i = 0; i < sizeof(data)/sizeof(struct asd); i++) {\n"
+	yield "\tif (data[i].n_samples) generate_samples(data[i].n_samples);\n"
+	yield "\tmidi_event(data[i].data, data[i].len);\n"
+	yield "}\n"
 
 def write_song_c(lines):
 	with open("song.c", "w") as f:
-		f.write("\n".join(lines) + "\n")
+		f.writelines(lines)
 
 def show_help():
 	print(" "*3, __file__, "<midifile> [flags]")
+	print("I will convert the provided midi file into events and")
+	print("write them to song.c, then compile main.c, then run it.")
+	print("")
 	print("flags:")
 	print("\t-h   show this")
 	print("\t-p   play output (using APLAY)")
@@ -46,6 +74,7 @@ def show_help():
 	print("\t-n   enable n samples dump")
 	print("\t-o   enable sample dump")
 	print("\t-r   enable raw sample dump")
+	print("\t-b   write song.c in compiler-friendly format")
 
 def main():
 	if len(sys.argv) <= 2:
@@ -61,15 +90,22 @@ def main():
 
 	if filename != "-":
 		print_status("Parsing", filename, "into c...")
-		events = convert_midi_to_c_simulator_events(sys.argv[1])
+		if "-b" in flags:
+			events = convert_black_midi_to_c_simulator_events(sys.argv[1])
+		else:
+			events = convert_midi_to_c_simulator_events(sys.argv[1])
 		print_status("Writing song.c...")
 		write_song_c(events)
 
 	print_status("Compiling simulator...")
-	run("gcc main.c -lm -o main.out") # compile
+	# compile
+	if "-b" in flags:
+		run("gcc main.c -lm -o main.out")
+	else:
+		run("gcc main.c -lm -o main.out -O0")
 
 	print_status("Running simulator...")
-	safe_flags = " ".join(quote(i) for i in flags if i not in ("-p", "-w", "-3", "-r"))
+	safe_flags = " ".join(quote(i) for i in flags if i not in ("-p", "-w", "-3", "-r", "-b"))
 	if "-p" in flags:
 		run(["bash", "-c", f"./main.out -r {safe_flags} | aplay -c 1 -f S32_LE -r 44100"])
 	elif "-w" in flags:
