@@ -4,14 +4,15 @@ def get_it(name_of_file, name_to_write):
     file = open(name_of_file, "r")
     result = []
     for line in file:
-        templine = line.strip().replace("0x", "").replace("step_n_samples", "")
-        templine = re.sub("[0-9A-F],\ ", "", templine)
-        templine = re.sub("\([0-9]*\)", "", templine)
-        templine = re.split("send_spi\(\[", templine)
-        for x in templine:
-            if x != "":
-                result.append(x.replace("])", ""))
-                #result += x.replace("])", "")
+        templine = re.sub("step_n_samples\([0-9]*\)\n", "", line)
+        templine = re.sub("0x", "", templine)
+        templine = re.sub(",\ ", "", templine)
+        templine = re.sub("send_spi\(\[", "", templine)
+        templine = re.sub("\]\)", "", templine)
+        templine = re.sub("\n", "", templine)
+        if (templine != ""):
+            result.append(templine)
+            print(templine)
     file.close()
     file = open(name_to_write, "w")
     newresult = []
