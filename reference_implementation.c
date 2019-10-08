@@ -164,8 +164,8 @@ void microcontroller_send_generator_update(ushort generator_index, bool reset_no
 
     data[0] = 2; // generator update
 
-    data[1] = (byte) reset_note_lifetime;
-    *(ushort*)(&data[2]) = generator_index;
+    *(ushort*)(&data[1]) = generator_index;
+    data[3] = (byte) reset_note_lifetime;
     memcpy(data+2+sizeof(ushort), &microcontroller_generator_states[generator_index], sizeof(MicrocontrollerGeneratorState));
 
     microcontroller_send_spi_packet(data, sizeof(data));
@@ -463,14 +463,13 @@ void fpga_handle_spi_packet(const byte* data, size_t length) {
             for (size_t i = 0; i < sizeof(MicrocontrollerGlobalState); i++) {
                 *(((byte*)&fpga_global_state) + i) = *(data + 1 + i);
             }
-
         }
     }
     elsewhen (packet_type == 2) { // generator_state update
         when (length >= 2 + sizeof(ushort) + sizeof(MicrocontrollerGeneratorState)) {
 
-            bool reset_note_lifetime = (bool)data[1];
-            ushort generator_index = *(ushort*)(data+2);
+            ushort generator_index = *(ushort*)(data+1);
+            bool reset_note_lifetime = (bool)data[3];
 
             // write each byte into where they belong, this could perhaps be a bit more hardcoded on the FPGA on where the wires go
             byte* generator_data_ptr = (byte*)&fpga_generators[generator_index].data;
