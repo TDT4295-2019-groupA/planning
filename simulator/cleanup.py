@@ -5,14 +5,32 @@ def get_it(name_of_file, name_to_write):
     result = []
     for line in file:
         templine = re.sub("step_n_samples\([0-9]*\)\n", "", line)
-        templine = re.sub("0x", "", templine)
-        templine = re.sub(",\ ", "", templine)
         templine = re.sub("send_spi\(\[", "", templine)
         templine = re.sub("\]\)", "", templine)
         templine = re.sub("\n", "", templine)
-        if (templine != ""):
-            result.append(templine)
-            print(templine)
+        templine = re.sub("0x", "", templine)
+        templine = re.split(",\ ", templine)
+        stringbuild = ""
+        if(templine[0] == "01"):
+            #print(templine)
+            for x in range(0, 16):
+                stringbuild += str(templine[x+9])
+            for x in range(0, 7):
+                stringbuild += str(templine[x+3])
+            stringbuild += str(templine[1]) + str(templine[2]) 
+            stringbuild += str(templine[0])
+        elif(templine[0] == "02"):
+            stringbuild += str(templine[11])
+            stringbuild += str(templine[10])
+            stringbuild += str(templine[9])
+            for x in range(0, 4):
+                stringbuild += str(templine[x+5])
+            stringbuild += str(templine[4])
+            stringbuild += str(templine[3])
+            stringbuild += str(templine[1]) + str(templine[2])
+            stringbuild += str(templine[0])
+        if (stringbuild != ""):
+            result.append(stringbuild)
     file.close()
     file = open(name_to_write, "w")
     newresult = []
