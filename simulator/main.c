@@ -26,7 +26,7 @@ void microcontroller_send_spi_packet(const byte* data, size_t length) {
 			}
 			print("])\n");
 		} else {
-			print("SPI packet:");
+			print("SPI:");
 			for (size_t i = 0; i < length; i++) {
 				print(" %02X", data[i]);
 			}
@@ -50,7 +50,7 @@ bool microcontroller_poll_pcb_button_state(uint button_id) {
 
 void generate_samples(size_t n) {
 	if (enable_n_samples_dump &&  enable_command_style_dump) print("step_n_samples(%d)\n", n);
-	if (enable_n_samples_dump && !enable_command_style_dump) print("Step %d samples\n", n);
+	if (enable_n_samples_dump && !enable_command_style_dump) print("Step: %d samples\n", n);
 	for (size_t i = 0; i < n; i++) {
 		WSample s = fpga_generate_sound_sample();
 		if (enable_sample_dump &&  enable_command_style_dump) print("expect_sample(%i)\n", s);
@@ -79,14 +79,19 @@ int main(int argc, char const *argv[]) {
 		else if (!strcmp(argv[i], "-c")) enable_command_style_dump = true;
 	}
 
-	microcontroller_global_generator_state.master_volume = 0xFF;
 	// hardcoded envelope settings for now
 
-	microcontroller_global_generator_state.envelope.attack  = 0.04 * SAMPLE_RATE;
-	microcontroller_global_generator_state.envelope.decay   = 0.2 * SAMPLE_RATE;
-	microcontroller_global_generator_state.envelope.sustain = 0.6 * 0xff;
-	microcontroller_global_generator_state.envelope.release = 0.2 * SAMPLE_RATE;
+	microcontroller_global_generator_state.envelope.attack  = 0.0 * SAMPLE_RATE;
+	microcontroller_global_generator_state.envelope.decay   = 0.0 * SAMPLE_RATE;
+	microcontroller_global_generator_state.envelope.sustain = 0.5 * 0xff;
+	microcontroller_global_generator_state.envelope.release = 0.0 * SAMPLE_RATE;
 
+	//microcontroller_global_generator_state.envelope.attack  = 0.04 * SAMPLE_RATE;
+	//microcontroller_global_generator_state.envelope.decay   = 0.2 * SAMPLE_RATE;
+	//microcontroller_global_generator_state.envelope.sustain = 0.6 * 0xff;
+	//microcontroller_global_generator_state.envelope.release = 0.2 * SAMPLE_RATE;
+
+	microcontroller_global_generator_state.master_volume = 0xFF >> 1;
 	microcontroller_send_global_state_update();
 
 	// just some code to visualize the current envelope when the note is held half a second
