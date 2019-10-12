@@ -183,7 +183,7 @@ int microcontroller_find_vacant_generator_channel() {
         if (pos >= N_GENERATORS) pos = 0;
         if (pos == starting_pos) return -1;
     }
-    starting_pos = pos+1;
+    starting_pos = (pos+1) % N_GENERATORS;
     return pos;
 }
 
@@ -225,7 +225,9 @@ void microcontroller_handle_midi_event(const byte *data, size_t length) {
             microcontroller_generator_states[idx].enabled       = false;
             microcontroller_generator_states[idx].note_index    = note;
             microcontroller_generator_states[idx].channel_index = channel;
-            microcontroller_generator_states[idx].velocity      = velocity;
+            if (velocity != 0) { // to not kill of the release
+                microcontroller_generator_states[idx].velocity      = velocity;
+            }
             microcontroller_send_generator_update(idx, true);
         }
         break; case 0b1001: { // note-on event
