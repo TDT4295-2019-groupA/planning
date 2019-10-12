@@ -9,6 +9,7 @@ bool enable_n_samples_dump  = false;
 bool enable_sample_dump     = false;
 bool enable_raw_sample_dump = false;
 bool enable_command_style_dump = false;
+bool enable_starting_silence_skip = false;
 
 // a print statement which is able to print even while outputting raw PCM data to stdout:
 #define print(...) {if (enable_raw_sample_dump) {fprintf(stderr, __VA_ARGS__); fflush(stderr);} else {printf(__VA_ARGS__);}}
@@ -51,8 +52,11 @@ bool microcontroller_poll_pcb_button_state(uint button_id) {
 void generate_samples(size_t n) {
 	if (enable_n_samples_dump &&  enable_command_style_dump) print("step_n_samples(%d)\n", n);
 	if (enable_n_samples_dump && !enable_command_style_dump) print("Step: %d samples\n", n);
+	if (!enable_sample_dump && !enable_raw_sample_dump) return;
 	for (size_t i = 0; i < n; i++) {
 		WSample s = fpga_generate_sound_sample();
+		if (enable_starting_silence_skip && s == 0) continue;
+		enable_starting_silence_skip = false;
 		if (enable_sample_dump &&  enable_command_style_dump) print("expect_sample(%i)\n", s);
 		if (enable_sample_dump && !enable_command_style_dump) print("Sample: %i\n", s);
 		if (enable_raw_sample_dump) { // little endian 32bit signed output
@@ -77,6 +81,7 @@ int main(int argc, char const *argv[]) {
 		else if (!strcmp(argv[i], "-o")) enable_sample_dump     = true;
 		else if (!strcmp(argv[i], "-r")) enable_raw_sample_dump = true;
 		else if (!strcmp(argv[i], "-c")) enable_command_style_dump = true;
+		else if (!strcmp(argv[i], "-m")) enable_starting_silence_skip = true;
 	}
 
 	// hardcoded envelope settings for now

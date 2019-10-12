@@ -74,6 +74,7 @@ def show_help():
 	print("\t-n   enable n samples dump")
 	print("\t-o   enable sample dump")
 	print("\t-r   enable raw sample dump")
+	print("\t-m   skip silence at beginning (intended for -o)")
 	print("\t-b   write song.c in compiler-friendly format")
 
 def main():
