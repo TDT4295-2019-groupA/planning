@@ -60,8 +60,9 @@ def write_song_c(lines):
 		f.writelines(lines)
 
 def show_help():
-	print(" "*3, __file__, "<midifile> [flags]")
-	print("I will convert the provided midi file into events and")
+	print()
+	print(" "*3, __file__, "<midifile> [flags]\n")
+	print("I will convert the provided midi file into simulator events and")
 	print("write them to song.c, then compile main.c, then run it.")
 	print("")
 	print("flags:")
@@ -69,13 +70,15 @@ def show_help():
 	print("\t-p   play output (using APLAY)")
 	print("\t-w   make wav (using SOX)")
 	print("\t-3   make mp3 (using LAME)")
-	print("\t-c   dump as commands instead of text")
+	print("\t-C   short for -c -s -n")
+	print("\t-c   dump as python commands instead of chisel3 test friendly text")
 	print("\t-s   enable spi dump")
 	print("\t-n   enable n samples dump")
 	print("\t-o   enable sample dump")
 	print("\t-r   enable raw sample dump")
 	print("\t-m   skip silence at beginning (intended for -o)")
 	print("\t-b   write song.c in compiler-friendly format")
+	print(f"\nExample usage for RPi:\n\t{__file__} my_midi_file.mid -C | ssh pi.local python3")
 
 def main():
 	if len(sys.argv) <= 2:
@@ -105,15 +108,45 @@ def main():
 	else:
 		run("gcc main.c -lm -o main.out -O0")
 
+	if "-C" in flags:
+		flags = [i for i in flags if i != "-C"] + ["-c", "-s", "-n"]
+	if "-c" in flags:
+		import textwrap
+		print(textwrap.dedent("""
+			#!/usr/bin/env python3
+			import time, spidev, sys
+			CHIP_SELECT = 0
+			SPI = spidev.SpiDev()
+			SPI.open(0, CHIP_SELECT)
+			SPI.max_speed_hz = 100000
+			SPI.mode = 0
+			SPI.bits_per_word = 8
+			SPI.cshigh = True
+			TIME = time.time()
+			def step_n_samples(n):
+				global TIME
+				TIME += n / 44100
+				try:
+					time.sleep(TIME - time.time())
+				except ValueError:
+					pass
+			def send_spi(data:list):
+				print("SPI:", " ".join(map(lambda n: "%02x"%n, data)))
+				sys.stdout.flush()
+				SPI.xfer(data)
+			send_spi([0]*32) # flush
+		""").strip())
+		sys.stdout.flush()
+
 	print_status("Running simulator...")
-	safe_flags = " ".join(quote(i) for i in flags if i not in ("-p", "-w", "-3", "-r", "-b"))
+	cmd_flags = " ".join(flags)
 	if "-p" in flags:
-		run(["bash", "-c", f"./main.out -r {safe_flags} | aplay -c 1 -f S32_LE -r 44100"])
+		run(["bash", "-c", f"./main.out -r {cmd_flags} | aplay -c 1 -f S32_LE -r 44100"])
 	elif "-w" in flags:
-		run(["bash", "-c", f"./main.out -r {safe_flags} | sox -t raw -r 44100 -e signed -b 32 -c 1 - -r 44100 {quote(filename+'.wav')}"])
+		run(["bash", "-c", f"./main.out -r {cmd_flags} | sox -t raw -r 44100 -e signed -b 32 -c 1 - -r 44100 {quote(filename+'.wav')}"])
 		print_status(f"output written to {filename+'.wav'}")
 	elif "-3" in flags:
-		run(["bash", "-c", f"./main.out -r {safe_flags} | lame -r -s 44.1 --bitwidth 32 --signed -m mono - {quote(filename+'.mp3')}"])
+		run(["bash", "-c", f"./main.out -r {cmd_flags} | lame -r -s 44.1 --bitwidth 32 --signed -m mono - {quote(filename+'.mp3')}"])
 		print_status(f"output written to {filename+'.mp3'}")
 	else:
 		run(["./main.out", *flags])

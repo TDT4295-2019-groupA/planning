@@ -75,7 +75,7 @@ void simulate() { // 2hacky4u
 
 
 int main(int argc, char const *argv[]) {
-	for (size_t i = 0; i < argc; i++) {
+	for (size_t i = 1; i < argc; i++) {
 		/**/ if (!strcmp(argv[i], "-s")) enable_spi_dump        = true;
 		else if (!strcmp(argv[i], "-n")) enable_n_samples_dump  = true;
 		else if (!strcmp(argv[i], "-o")) enable_sample_dump     = true;
@@ -83,12 +83,31 @@ int main(int argc, char const *argv[]) {
 		else if (!strcmp(argv[i], "-c")) enable_command_style_dump = true;
 		else if (!strcmp(argv[i], "-m")) enable_starting_silence_skip = true;
 	}
+	if (enable_spi_dump || enable_n_samples_dump || enable_sample_dump) {
+		print("#generated with the flags:");
+		for (size_t i = 1; i < argc; i++) print(" %s", argv[i]);
+		print("\n");
+
+		// add in these to avoid fuckups with differing configs. It has already saved me many times
+		// the tests in chisel will verify these values
+		print("#generated for SAMPLE_RATE     %d\n", SAMPLE_RATE);
+		print("#generated for FREQ_SHIFT      %d\n", FREQ_SHIFT);
+		print("#generated for NOTE_LIFE_COEFF %d\n", NOTE_LIFE_COEFF);
+		print("#generated for N_MIDI_KEYS     %d\n", N_MIDI_KEYS);
+		print("#generated for N_MIDI_CHANNELS %d\n", N_MIDI_CHANNELS);
+		print("#generated for MIDI_A3_INDEX   %d\n", MIDI_A3_INDEX);
+		print("#generated for MIDI_A3_FREQ    %f\n", MIDI_A3_FREQ);
+		print("#generated for VELOCITY_MAX    %d\n", VELOCITY_MAX);
+		print("#generated for SAMPLE_MAX      %d\n", SAMPLE_MAX);
+		print("#generated for N_GENERATORS    %d\n", N_GENERATORS);
+	}
+
 
 	// hardcoded envelope settings for now
 
 	microcontroller_global_generator_state.envelope.attack  = 0.0 * SAMPLE_RATE;
 	microcontroller_global_generator_state.envelope.decay   = 0.0 * SAMPLE_RATE;
-	microcontroller_global_generator_state.envelope.sustain = 0.5 * 0xff;
+	microcontroller_global_generator_state.envelope.sustain = 1.0 * 0xff;
 	microcontroller_global_generator_state.envelope.release = 0.0 * SAMPLE_RATE;
 
 	//microcontroller_global_generator_state.envelope.attack  = 0.04 * SAMPLE_RATE;
