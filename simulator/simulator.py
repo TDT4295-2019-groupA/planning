@@ -70,6 +70,7 @@ def show_help():
 	print("\t-p   play output (using APLAY)")
 	print("\t-w   make wav (using SOX)")
 	print("\t-3   make mp3 (using LAME)")
+	print("\t-T   short for -s -n -o -m")
 	print("\t-C   short for -c -s -n")
 	print("\t-c   dump as python commands instead of chisel3 test friendly text")
 	print("\t-s   enable spi dump")
@@ -78,7 +79,8 @@ def show_help():
 	print("\t-r   enable raw sample dump")
 	print("\t-m   skip silence at beginning (intended for -o)")
 	print("\t-b   write song.c in compiler-friendly format")
-	print(f"\nExample usage for RPi:\n\t{__file__} my_midi_file.mid -C | ssh pi.local python3")
+	print(f"\nExample usage for making chisel tests:\n\t{__file__} my_midi_file.mid -T | head -n 4000 > test_data.txt\n")
+	print(f"\nExample usage for RPi:\n\t{__file__} my_midi_file.mid -C | ssh pi.local python3\n")
 
 def main():
 	if len(sys.argv) <= 2:
@@ -108,8 +110,11 @@ def main():
 	else:
 		run("gcc main.c -lm -o main.out -O0")
 
+	if "-T" in flags:
+		flags = [i for i in flags if i != "-T"] + ["-s", "-n", "-o", "-m"]
 	if "-C" in flags:
 		flags = [i for i in flags if i != "-C"] + ["-c", "-s", "-n"]
+
 	if "-c" in flags:
 		import textwrap
 		print(textwrap.dedent("""
