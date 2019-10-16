@@ -502,14 +502,20 @@ Sample fpga_generate_sample_from_generator(uint generator_index) {
     when (generator->data.enabled || (generator->note_life / NOTE_LIFE_COEFF) < fpga_global_state.envelope.release) {
         uint freq = fpga_note_index_to_freq(generator->data.note_index);
 
-        // this whole conversion from pitchwheel value to frequency coefficient ought to be a lookup table
-        // this LuT doesn't even have to be inside each generator, if we
-        // instead preprocess the pitchwheel value as we recieve the SPI generator
-        // update packet
-        float note_offset = 2.0 * ((float)(fpga_global_state.pitchwheels[generator->data.channel_index])) / 128.0;
-        uint freq_coeff = round(pow(2.0, note_offset/12.0) * (1 << FREQ_SHIFT));
+        // old pitchwheel implementation
+        //float note_offset = 2.0 * ((float)(fpga_global_state.pitchwheels[generator->data.channel_index])) / 128.0;
+        //uint freq_coeff = round(pow(2.0, note_offset/12.0) * (1 << FREQ_SHIFT));
+        ///freq = ((unsigned long long)(freq) * freq_coeff) >> FREQ_SHIFT;
 
-        freq = ((unsigned long long)(freq) * freq_coeff) >> FREQ_SHIFT;
+        int magic_linear_scale  = ((int)((pow(2, 2.0/12.0) - pow(2.0, -2.0/12.0))*(1<<8)));
+        int magic_linear_offset = (1<<16);
+        uint freq_coeff
+            = fpga_global_state.pitchwheels[generator->data.channel_index]
+            * magic_linear_scale
+            + magic_linear_offset;
+        freq = ((unsigned long long)(freq) * freq_coeff) >> (16);
+
+        // this is not a LUT
         uint wavelength = freq_to_wavelength_in_samples(freq);
 
         // due to the way registers work, the chisel version requires the +1
