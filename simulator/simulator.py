@@ -70,8 +70,8 @@ def show_help():
 	print("\t-p   play output (using APLAY)")
 	print("\t-w   make wav (using SOX)")
 	print("\t-3   make mp3 (using LAME)")
-	print("\t-T   short for -s -n -o -m")
-	print("\t-C   short for -c -s -n")
+	print("\t-T   short for -s -o -m, used for making test data")
+	print("\t-C   short for -c -s -n, used for playback from RPi")
 	print("\t-c   dump as python commands instead of chisel3 test friendly text")
 	print("\t-s   enable spi dump")
 	print("\t-n   enable n samples dump")
@@ -111,7 +111,8 @@ def main():
 		run("gcc main.c -lm -o main.out -O0")
 
 	if "-T" in flags:
-		flags = [i for i in flags if i != "-T"] + ["-s", "-n", "-o", "-m"]
+		#flags = [i for i in flags if i != "-T"] + ["-s", "-n", "-o", "-m"]
+		flags = [i for i in flags if i != "-T"] + ["-s", "-o", "-m"]
 	if "-C" in flags:
 		flags = [i for i in flags if i != "-C"] + ["-c", "-s", "-n"]
 
