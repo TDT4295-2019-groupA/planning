@@ -50,12 +50,13 @@ typedef unsigned short  Time;     // measured in n samples, meaning x second is 
 typedef unsigned int    WTime;    // measured in n*NOTE_LIFE_COEFF samples, meaning x second is represented as x * SAMPLE_RATE * NOTE_LIFE_COEFF
 
 
-typedef enum Instrument { // we can expand this as much as we want
+enum Instrument { // we can expand this as much as we want
     SQUARE   = 0,
     TRIANGLE = 1,
     SAWTOOTH = 2,
     SINE     = 3,
-} Instrument;
+};
+typedef byte Instrument;
 
 typedef struct Envelope { // either preset or controlled by knobs/buttons on the PCB
     Time   attack;
