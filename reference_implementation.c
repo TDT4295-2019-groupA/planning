@@ -525,7 +525,7 @@ Sample fpga_generate_sample_from_generator(uint generator_index) {
             // this replaces our modulo of note_life, but it also accounts for
             // changing wavelengths due to it's accumulating nature.
             // sin(2 * pi * f * t) would likely see a discontinuous edge if f changes
-            generator->wavelength_pos = 0;
+            generator->wavelength_pos -= wavelength;
         }
 
         Sample sample;
