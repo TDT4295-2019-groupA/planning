@@ -491,7 +491,7 @@ void fpga_handle_spi_packet(const byte* data, size_t length) {
 
 
 // this represents a single generator module, which there are N_GENERATORS of on the FPGA
-Sample fpga_generate_sample_from_generator(uint generator_index) {
+WSample fpga_generate_sample_from_generator(uint generator_index) {
     FPGAGeneratorState* generator = &fpga_generators[generator_index]; // just a reference, not a copy
 
     // make sure this is only stepped up once per sample, meaning we might need
@@ -561,7 +561,7 @@ Sample fpga_generate_sample_from_generator(uint generator_index) {
         }
 
         // this doesn't have to be a separate module, it can be inlined into the generator
-        return fpga_apply_envelope(sample, generator) * generator->data.velocity / VELOCITY_MAX;
+        return fpga_apply_envelope(sample, generator) * generator->data.velocity;// / VELOCITY_MAX;
     } otherwise {
         return 0;
     }
@@ -577,7 +577,7 @@ WSample fpga_generate_sound_sample() { // is run once per sound sample
         out += fpga_generate_sample_from_generator(generator_idx);
     }
 
-    return out * fpga_global_state.master_volume << 4; // 4 bits headroom
+    return (out / VELOCITY_MAX) * fpga_global_state.master_volume << 4; // 4 bits headroom
 }
 
 
