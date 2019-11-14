@@ -33,7 +33,7 @@
 #define MIDI_A3_FREQ    440.0 /* no, i won't listen to your A=432Hz bullshit */
 #define VELOCITY_MAX    0x7f  /* 7 bits */
 #define SAMPLE_MAX      0x7FFF /* max output from a single generator */
-#define N_GENERATORS    16/* number of supported notes playing simultainiously  (polytones), \
+#define N_GENERATORS    8 /* number of supported notes playing simultainiously  (polytones), \
                              subject to change, chisel and microcontroller code \
                              should scale from this single variable alone */
 

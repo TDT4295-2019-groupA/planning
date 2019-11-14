@@ -107,13 +107,13 @@ int main(int argc, char const *argv[]) {
 
 	microcontroller_global_generator_state.envelope.attack  = 0.0 * SAMPLE_RATE;
 	microcontroller_global_generator_state.envelope.decay   = 0.0 * SAMPLE_RATE;
-	microcontroller_global_generator_state.envelope.sustain = 1.0 * 0xff;
+	microcontroller_global_generator_state.envelope.sustain = 1.0 * 0x7f;
 	microcontroller_global_generator_state.envelope.release = 0.0 * SAMPLE_RATE;
 
-	//microcontroller_global_generator_state.envelope.attack  = 0.04 * SAMPLE_RATE;
-	//microcontroller_global_generator_state.envelope.decay   = 0.2 * SAMPLE_RATE;
+	//microcontroller_global_generator_state.envelope.attack  = 0.025 * SAMPLE_RATE;
+	//microcontroller_global_generator_state.envelope.decay   = 0.025 * SAMPLE_RATE;
 	//microcontroller_global_generator_state.envelope.sustain = 0.6 * 0xff;
-	//microcontroller_global_generator_state.envelope.release = 0.2 * SAMPLE_RATE;
+	//microcontroller_global_generator_state.envelope.release = 0.05 * SAMPLE_RATE;
 
 	microcontroller_global_generator_state.master_volume = 0xFF >> 1;
 	microcontroller_send_global_state_update();
@@ -122,12 +122,12 @@ int main(int argc, char const *argv[]) {
 	/*
 	fpga_generators[0].note_life = 0;
 	fpga_generators[0].data.enabled = true;
-	for (size_t i = 0; i < SAMPLE_RATE; i++) {
-		fpga_generators[0].note_life += NOTE_LIFE_COEFF;
-		if (i == SAMPLE_RATE/2) fpga_generators[0].data.enabled = false;
-		if (i == SAMPLE_RATE/2) fpga_generators[0].note_life = 0;
+	for (size_t i = 0; i < SAMPLE_RATE/3; i++) {
+		fpga_generators[0].note_life += NOTE_LIFE_COEFF*2;
+		if (i == SAMPLE_RATE/4) fpga_generators[0].data.enabled = false;
+		if (i == SAMPLE_RATE/4) fpga_generators[0].note_life = 0;
 		Sample s = fpga_apply_envelope(SAMPLE_MAX, &fpga_generators[0]);
-		printf("%d\n", s);
+		printf("%d,\n", s);
 	}
 	return 0;
 	*/
